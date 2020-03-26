@@ -466,6 +466,13 @@ thread_register_sleep(int64_t ticks_to_wake_up) {
 	
 	// set wake up time and push into list
 	struct thread* curr = thread_current();
+
+	// but, it should not be idle_thread
+	if(curr == idle_thread) {
+		intr_set_level(old_level);
+		return;
+	}
+	
 	curr->ticks_to_wake_up = ticks_to_wake_up;
 	list_push_back(&sleep_list, &(curr->elem));
 	//printf("thread %p sleep %lld\n", curr, ticks_to_wake_up);
@@ -483,22 +490,22 @@ void
 thread_awake_sleep(int64_t ticks_now) {
 	// TODO: optimize further more? (ex: run loop only if it must be done)
 
-	struct list_elem* begin = list_begin(&sleep_list);
-	struct list_elem* end = list_end(&sleep_list);
+	struct list_elem* sleep_begin = list_begin(&sleep_list);
+	struct list_elem* sleep_end = list_end(&sleep_list);
 
 	// loop for every threads in sleep_list
-	for(struct list_elem* it = begin; it != end;) {
+	for(struct list_elem* it = sleep_begin; it != sleep_end; it = list_next(it)) {
 		struct thread* here = list_entry(it, struct thread, elem);
+		const bool WAKEUP = here->ticks_to_wake_up <= ticks_now;
 
-		if(here->ticks_to_wake_up <= ticks_now) {
-			it = list_remove(it);
+		if(WAKEUP) {
+			it = list_prev(list_remove(it));
 			//printf("thread %p awake\n", here);
 
 			barrier(); // to force order "remove -> unblock"
 			// TODO: is this really needed?
+
 			thread_unblock(here);
-		} else {
-			it = list_next(it);
 		}
 	}
 }
