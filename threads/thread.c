@@ -28,6 +28,9 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
+/* [project 1] List of processes sleeping after timer_sleep() */
+static struct list sleep_list;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -108,6 +111,7 @@ thread_init (void) {
 	/* Init the globla thread context */
 	lock_init (&tid_lock);
 	list_init (&ready_list);
+	list_init (&sleep_list);
 	list_init (&destruction_req);
 
 	/* Set up a thread structure for the running thread. */
@@ -451,6 +455,56 @@ do_iret (struct intr_frame *tf) {
 			"iretq"
 			: : "g" ((uint64_t) tf) : "memory");
 }
+
+/* [project 1] register current thread to sleep_list and block it.
+Interrupt blocking is done here.
+"ticks_to_wake_up" must be for timer_ticks() of timer.c, not thread_ticks. */
+void
+thread_register_sleep(int64_t ticks_to_wake_up) {
+	// set interrupt disable
+	enum intr_level old_level = intr_disable();
+	
+	// set wake up time and push into list
+	struct thread* curr = thread_current();
+	curr->ticks_to_wake_up = ticks_to_wake_up;
+	list_push_back(&sleep_list, &(curr->elem));
+	//printf("thread %p sleep %lld\n", curr, ticks_to_wake_up);
+
+	// blocking curr, rather than looping
+	thread_block();
+
+	// set old interrupt level
+	intr_set_level(old_level);
+}
+
+/* [project 1] Awake all threads whose ticks_to_wake_up is <= "ticks_now",
+then unblock and push them into ready_list */
+void
+thread_awake_sleep(int64_t ticks_now) {
+	// TODO: optimize further more? (ex: run loop only if it must be done)
+
+	struct list_elem* begin = list_begin(&sleep_list);
+	struct list_elem* end = list_end(&sleep_list);
+
+	// loop for every threads in sleep_list
+	for(struct list_elem* it = begin; it != end;) {
+		struct thread* here = list_entry(it, struct thread, elem);
+
+		if(here->ticks_to_wake_up <= ticks_now) {
+			it = list_remove(it);
+			//printf("thread %p awake\n", here);
+
+			barrier(); // to force order "remove -> unblock"
+			// TODO: is this really needed?
+			thread_unblock(here);
+		} else {
+			it = list_next(it);
+		}
+	}
+}
+
+
+/** static functions **/
 
 /* Switching the thread by activating the new thread's page
    tables, and, if the previous thread is dying, destroying it.
