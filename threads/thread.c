@@ -119,6 +119,13 @@ thread_init (void) {
 	init_thread (initial_thread, "main", PRI_DEFAULT);
 	initial_thread->status = THREAD_RUNNING;
 	initial_thread->tid = allocate_tid ();
+
+
+	/*[project 1]*/
+	initial_thread->priority_before = -1;
+	initial_thread->lock_waiting = NULL;
+	initial_thread->sema_waiting = NULL;
+	initial_thread->receiver = NULL;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -213,9 +220,7 @@ thread_create (const char *name, int priority,
 	t->tf.eflags = FLAG_IF;
 
 	/*Relinquish lock if p(new) > p(curr)*/
-	bool compare = (thread_get_priority() < priority) ?  1 : 0;
-	msg("new priority bigger? : %d", compare);
-	msg("current thread id: %d", tid);
+	bool compare = (thread_current()->priority < t->priority) ?  true : false;
 	
 	
 	/* Preemption --> utilize interrupt mechanism to
@@ -223,17 +228,16 @@ thread_create (const char *name, int priority,
 	 * to determine what process to execute next
 	 * */
 	
-
+	
 
 	/* Add to run queue. */
-	msg("lock held by current thread? %d ", lock_held_by_current_thread(aux));
-	msg("current thread priortiy: %d", thread_get_priority());
+	//msg("lock held by current thread? %d ", lock_held_by_current_thread(aux));
+	//msg("current thread priortiy: %d", thread_get_priority());
 	thread_unblock (t);
 
 	if (compare)
 	{
-		thread_yield();
-		
+		thread_yield();	
 	}
 
 	return tid;
@@ -249,9 +253,44 @@ void
 thread_block (void) {
 	ASSERT (!intr_context ());
 	ASSERT (intr_get_level () == INTR_OFF);
+
+	/*[project 1] 
+	 * find the receiver_thread that the current_thread will donate to  
+	 * if the priority of current_thread is greater
+	 * */
+
+	struct thread *curr = thread_current();
+	struct thread *receiver;
+
+	if (curr->lock_waiting != NULL)
+	{
+		receiver = curr->lock_waiting->holder;
+		if(receiver->priority < curr->priority)
+			donate_priority(curr, receiver);
+
+	}
+
+	else if (curr->sema_waiting !=NULL)
+	{
+		struct semaphore *sema = curr->sema_waiting;
+		struct lock *lock = sema->lock;
+		receiver = lock->holder;
+		if (receiver->priority < curr->priority)
+			donate_priority(curr, receiver); 
+	}
+
 	thread_current ()->status = THREAD_BLOCKED;
 	schedule ();
 }
+
+void donate_priority(struct thread *donor, struct thread *receiver)
+{
+	if (receiver->priority_before == -1)
+		receiver->priority_before = receiver->priority;
+	receiver->priority = donor->priority;
+	donor->receiver = receiver;	
+}
+
 
 /* Transitions a blocked thread T to the ready-to-run state.
    This is an error if T is not blocked.  (Use thread_yield() to
@@ -270,10 +309,24 @@ thread_unblock (struct thread *t) {
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED);
 	list_push_back (&ready_list, &t->elem);
+	
+	/*[project 1]*/
+	sort_ready_list();
+	if (t->receiver != NULL)
+	{
+		take_back_priority(t->receiver);
+		t->receiver = NULL;
+	}
+
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
 }
 
+void take_back_priority(struct thread *receiver)
+{
+	receiver->priority = receiver->priority_before;
+	receiver->priority_before = -1;
+}
 /* Returns the name of the running thread. */
 const char *
 thread_name (void) {
@@ -334,21 +387,45 @@ thread_yield (void) {
 	if (curr != idle_thread)
 		list_push_back (&ready_list, &curr->elem);
 	/* [project 1] sort ready list after the current thread has yielded */
-	sort_ready_list()
+	sort_ready_list();
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
-thread_set_priority (int new_priority) {
+thread_set_priority (int new_priority)
+{
+	enum intr_level old_intr = intr_disable();
+	struct thread *curr = thread_current();
+	if (curr->priority_before == -1)
+	{
+		curr->priority_before = new_priority;
+	} else {
+		curr->priority = new_priority;
+	}
+
+	if (!list_empty(&ready_list))
+	{
+		struct thread *next = list_entry(list_front(&ready_list), struct thread, elem);
+		if (next->priority > new_priority)
+			thread_yield();
+	}
+	intr_set_level(old_intr);
 	thread_current ()->priority = new_priority;
 }
 
 /* Returns the current thread's priority. */
 int
-thread_get_priority (void) {
-	return thread_current ()->priority;
+thread_get_priority (void)
+{
+	enum intr_level old_intr = intr_disable();
+	struct thread *curr = thread_current();
+	int priority = curr->priority;
+	intr_set_level(old_intr);
+
+	return priority;
+
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -440,6 +517,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
+
+	t->priority_before = -1;
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -683,19 +762,19 @@ allocate_tid (void) {
 
 
 /* [project 1] function to compare priorities between two threads */
-bool compare_priority(struct list_elem *element_a, struct list *element_b, void *aux)
+bool compare_priority(const struct list_elem *element_a, const struct list_elem *element_b, void *aux UNUSED)
 {
 	struct thread *thread_A = list_entry(element_a, struct thread, elem);
 	struct thread *thread_B = list_entry(element_b, struct thread, elem);
 	
-	bool val = (thread_A-> priority > thread_B->priority) ? true : false;
+	bool val = (thread_A->priority > thread_B->priority) ? true : false;
 	return val;
 }	
 
 /* [project 1] function to sort the ready_list according to priority */
 void sort_ready_list(void)
 {
-	list_sort(&ready_list, compare_priority, 0);
+	list_sort(&ready_list, compare_priority, NULL);
 }
 
 

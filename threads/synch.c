@@ -46,6 +46,8 @@ sema_init (struct semaphore *sema, unsigned value) {
 	ASSERT (sema != NULL);
 
 	sema->value = value;
+	/*[project 1] initialize associated lock*/
+	sema->lock = NULL;
 	list_init (&sema->waiters);
 }
 
@@ -66,9 +68,21 @@ sema_down (struct semaphore *sema) {
 
 	old_level = intr_disable ();
 	while (sema->value == 0) {
-		list_push_back (&sema->waiters, &thread_current ()->elem);
+		
+		struct thread *curr = thread_current();
+		list_push_back(&sema->waiters, &curr->elem);
+		/*[project 1] designate the thread's dependent sem and lock */
+		list_sort(&sema->waiters, compare_priority, NULL);
+		if(&sema->lock == NULL)
+		{
+			curr->sema_waiting = sema;
+		} else {
+			curr->lock_waiting = sema->lock;
+		}
 		thread_block ();
 	}
+	thread_yield();
+
 	sema->value--;
 	intr_set_level (old_level);
 }
@@ -110,10 +124,20 @@ sema_up (struct semaphore *sema) {
 
 	old_level = intr_disable ();
 	if (!list_empty (&sema->waiters))
+	{
+		/*[project 1]*/
+		struct thread *curr = thread_current();
+		list_sort(&sema->waiters, compare_priority, NULL);
+		curr->sema_waiting = NULL;
+		curr->lock_waiting = NULL;
 		thread_unblock (list_entry (list_pop_front (&sema->waiters),
 					struct thread, elem));
+	}
+	
+		
 	sema->value++;
 	intr_set_level (old_level);
+	thread_yield();
 }
 
 static void sema_test_helper (void *sema_);
@@ -172,6 +196,10 @@ lock_init (struct lock *lock) {
 
 	lock->holder = NULL;
 	sema_init (&lock->semaphore, 1);
+
+	/*[project 1] */
+	struct semaphore *sem = &lock->semaphore;
+	sem->lock = lock;
 }
 
 /* Acquires LOCK, sleeping until it becomes available if
