@@ -213,13 +213,28 @@ thread_create (const char *name, int priority,
 	t->tf.eflags = FLAG_IF;
 
 	/*Relinquish lock if p(new) > p(curr)*/
-	bool compare = (thread_get_priority() <= priority) ?  1 : 0;
+	bool compare = (thread_get_priority() < priority) ?  1 : 0;
 	msg("new priority bigger? : %d", compare);
-	/*if (compare) do_schedule(THREAD_READY);*/
+	msg("current thread id: %d", tid);
+	
+	
+	/* Preemption --> utilize interrupt mechanism to
+	 * suspend current executing process and invoke scheduler
+	 * to determine what process to execute next
+	 * */
+	
+
+
 	/* Add to run queue. */
 	msg("lock held by current thread? %d ", lock_held_by_current_thread(aux));
 	msg("current thread priortiy: %d", thread_get_priority());
 	thread_unblock (t);
+
+	if (compare)
+	{
+		thread_yield();
+		
+	}
 
 	return tid;
 }
@@ -318,6 +333,8 @@ thread_yield (void) {
 	old_level = intr_disable ();
 	if (curr != idle_thread)
 		list_push_back (&ready_list, &curr->elem);
+	/* [project 1] sort ready list after the current thread has yielded */
+	sort_ready_list()
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -663,3 +680,22 @@ allocate_tid (void) {
 
 	return tid;
 }
+
+
+/* [project 1] function to compare priorities between two threads */
+bool compare_priority(struct list_elem *element_a, struct list *element_b, void *aux)
+{
+	struct thread *thread_A = list_entry(element_a, struct thread, elem);
+	struct thread *thread_B = list_entry(element_b, struct thread, elem);
+	
+	bool val = (thread_A-> priority > thread_B->priority) ? true : false;
+	return val;
+}	
+
+/* [project 1] function to sort the ready_list according to priority */
+void sort_ready_list(void)
+{
+	list_sort(&ready_list, compare_priority, 0);
+}
+
+

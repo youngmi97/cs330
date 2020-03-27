@@ -141,4 +141,6 @@ void do_iret (struct intr_frame *tf);
 void thread_register_sleep(int64_t ticks_to_wake_up);
 void thread_awake_sleep(int64_t ticks_now);
 
+bool compare_priority(struct list_elem *, struct list_elem *, void *);
+void sort_ready_list(void);
 #endif /* threads/thread.h */

@@ -190,6 +190,7 @@ lock_acquire (struct lock *lock) {
 
 	sema_down (&lock->semaphore);
 	lock->holder = thread_current ();
+	sort_ready_list();
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
