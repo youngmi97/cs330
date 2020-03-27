@@ -180,6 +180,10 @@ thread_print_stats (void) {
    The code provided sets the new thread's `priority' member to
    PRIORITY, but no actual priority scheduling is implemented.
    Priority scheduling is the goal of Problem 1-3. */
+
+/*[project 1] 
+ * check priority p(new) vs p(curr)
+ */
 tid_t
 thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
@@ -208,7 +212,13 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
+	/*Relinquish lock if p(new) > p(curr)*/
+	bool compare = (thread_get_priority() <= priority) ?  1 : 0;
+	msg("new priority bigger? : %d", compare);
+	/*if (compare) do_schedule(THREAD_READY);*/
 	/* Add to run queue. */
+	msg("lock held by current thread? %d ", lock_held_by_current_thread(aux));
+	msg("current thread priortiy: %d", thread_get_priority());
 	thread_unblock (t);
 
 	return tid;
@@ -420,6 +430,10 @@ init_thread (struct thread *t, const char *name, int priority) {
    empty.  (If the running thread can continue running, then it
    will be in the run queue.)  If the run queue is empty, return
    idle_thread. */
+
+/*[project 1]
+ * perhaps the ready_list should be sorted here according to priority?
+ * */
 static struct thread *
 next_thread_to_run (void) {
 	if (list_empty (&ready_list))
