@@ -91,6 +91,14 @@ struct thread {
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
 
+	/*[project 1] priority_donation & synch mechanism data */
+	struct lock *lock_waiting;
+	struct semaphore *sema_waiting;
+
+	struct thread *receiver;
+	int priority_before;
+
+
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
@@ -141,6 +149,9 @@ void do_iret (struct intr_frame *tf);
 void thread_register_sleep(int64_t ticks_to_wake_up);
 void thread_awake_sleep(int64_t ticks_now);
 
-bool compare_priority(struct list_elem *, struct list_elem *, void *);
+bool compare_priority(const struct list_elem * , const struct list_elem *, void *);
 void sort_ready_list(void);
+
+void donate_priority(struct thread *, struct thread *);
+void take_back_priority(struct thread *);
 #endif /* threads/thread.h */
