@@ -196,6 +196,7 @@ thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
 	struct thread *t;
 	tid_t tid;
+	enum intr_level old_level;
 
 	ASSERT (function != NULL);
 
@@ -234,12 +235,14 @@ thread_create (const char *name, int priority,
 	//msg("lock held by current thread? %d ", lock_held_by_current_thread(aux));
 	//msg("current thread priortiy: %d", thread_get_priority());
 	thread_unblock (t);
-
+	
+	old_level = intr_disable();
 	if (compare)
 	{
 		thread_yield();	
 	}
-
+	
+	intr_set_level(old_level);
 	return tid;
 }
 
@@ -385,9 +388,12 @@ thread_yield (void) {
 
 	old_level = intr_disable ();
 	if (curr != idle_thread)
+	{
 		list_push_back (&ready_list, &curr->elem);
+		sort_ready_list();
+	}
 	/* [project 1] sort ready list after the current thread has yielded */
-	sort_ready_list();
+	//sort_ready_list();
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }

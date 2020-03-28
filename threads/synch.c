@@ -81,10 +81,10 @@ sema_down (struct semaphore *sema) {
 		}
 		thread_block ();
 	}
-	thread_yield();
 
 	sema->value--;
 	intr_set_level (old_level);
+	thread_yield();
 }
 
 /* Down or "P" operation on a semaphore, but only if the
@@ -118,6 +118,8 @@ sema_try_down (struct semaphore *sema) {
    This function may be called from an interrupt handler. */
 void
 sema_up (struct semaphore *sema) {
+	printf("in sema_up before intr with: %s", thread_name());
+		
 	enum intr_level old_level;
 
 	ASSERT (sema != NULL);
@@ -137,6 +139,7 @@ sema_up (struct semaphore *sema) {
 		
 	sema->value++;
 	intr_set_level (old_level);
+	printf("in sema_up after intr with: %s", thread_name());
 	thread_yield();
 }
 
