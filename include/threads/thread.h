@@ -94,6 +94,7 @@ struct thread {
 	/*[project 1] priority_donation & synch mechanism data */
 	struct lock *lock_waiting;
 	struct semaphore *sema_waiting;
+	struct list locks;
 
 	struct thread *receiver;
 	int priority_before;
@@ -150,8 +151,15 @@ void thread_register_sleep(int64_t ticks_to_wake_up);
 void thread_awake_sleep(int64_t ticks_now);
 
 bool compare_priority(const struct list_elem * , const struct list_elem *, void *);
+bool compare_priority_locks(const struct list_elem *, const struct list_elem *, void *);
 void sort_ready_list(void);
 
 void donate_priority(struct thread *, struct thread *);
+void update_priority(struct thread *);
 void take_back_priority(struct thread *);
+
+void thread_add_lock(struct lock *lock);
+void thread_remove_lock(struct lock *lock);
+
+void check_yield_condition(void);
 #endif /* threads/thread.h */

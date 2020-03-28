@@ -73,18 +73,13 @@ sema_down (struct semaphore *sema) {
 		list_push_back(&sema->waiters, &curr->elem);
 		/*[project 1] designate the thread's dependent sem and lock */
 		list_sort(&sema->waiters, compare_priority, NULL);
-		if(&sema->lock == NULL)
-		{
-			curr->sema_waiting = sema;
-		} else {
-			curr->lock_waiting = sema->lock;
-		}
 		thread_block ();
 	}
-
+	
+	//thread_yield();
 	sema->value--;
 	intr_set_level (old_level);
-	thread_yield();
+	//thread_yield();
 }
 
 /* Down or "P" operation on a semaphore, but only if the
@@ -118,7 +113,7 @@ sema_try_down (struct semaphore *sema) {
    This function may be called from an interrupt handler. */
 void
 sema_up (struct semaphore *sema) {
-	printf("in sema_up before intr with: %s", thread_name());
+	//printf("in sema_up before intr with: %s \n", thread_name());
 		
 	enum intr_level old_level;
 
@@ -128,19 +123,21 @@ sema_up (struct semaphore *sema) {
 	if (!list_empty (&sema->waiters))
 	{
 		/*[project 1]*/
-		struct thread *curr = thread_current();
+		//struct thread *curr = thread_current();
 		list_sort(&sema->waiters, compare_priority, NULL);
-		curr->sema_waiting = NULL;
-		curr->lock_waiting = NULL;
+		//curr->sema_waiting = NULL;
+		//curr->lock_waiting = NULL;
 		thread_unblock (list_entry (list_pop_front (&sema->waiters),
 					struct thread, elem));
 	}
 	
 		
 	sema->value++;
+	check_yield_condition();
+
 	intr_set_level (old_level);
-	printf("in sema_up after intr with: %s", thread_name());
-	thread_yield();
+	//printf("in sema_up after intr with: %s \n", thread_name());
+	//thread_yield();
 }
 
 static void sema_test_helper (void *sema_);
@@ -201,8 +198,8 @@ lock_init (struct lock *lock) {
 	sema_init (&lock->semaphore, 1);
 
 	/*[project 1] */
-	struct semaphore *sem = &lock->semaphore;
-	sem->lock = lock;
+	//struct semaphore *sem = &lock->semaphore;
+	//sem->lock = lock;
 }
 
 /* Acquires LOCK, sleeping until it becomes available if
@@ -218,10 +215,40 @@ lock_acquire (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
+	
+	struct thread *curr = thread_current();
+	struct lock *lock_tmp;
+	/*[project 1] */
+	if (lock->holder !=NULL && !thread_mlfqs)
+	{
+		curr->lock_waiting = lock;
+		lock_tmp = lock;
+		int depth = 0;
+		/* Implementing nested priority donation*/
+		while(lock != NULL && curr->priority > lock_tmp->max_priority && depth < 8)
+		{
+			lock_tmp->max_priority = curr->priority;
+			donate_priority(curr ,  lock_tmp->holder);
+			lock_tmp = lock_tmp->holder->lock_waiting;
+			depth ++;
+
+		}
+	}
 
 	sema_down (&lock->semaphore);
+	
+	curr = thread_current();	
+	enum intr_level old_level = intr_disable();
+	if (!thread_mlfqs)
+	{
+		curr->lock_waiting = NULL;
+		lock->max_priority = curr->priority;
+		thread_add_lock(lock);
+	}
+	
 	lock->holder = thread_current ();
-	sort_ready_list();
+	intr_set_level(old_level);
+	//sort_ready_list();
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -251,11 +278,18 @@ lock_try_acquire (struct lock *lock) {
    handler. */
 void
 lock_release (struct lock *lock) {
+	
+	/*[project 1]*/
+	enum intr_level old_level  = intr_disable();
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
+	
 
+	thread_remove_lock(lock);
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);
+
+	intr_set_level(old_level);
 }
 
 /* Returns true if the current thread holds LOCK, false

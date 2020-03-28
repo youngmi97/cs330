@@ -119,13 +119,6 @@ thread_init (void) {
 	init_thread (initial_thread, "main", PRI_DEFAULT);
 	initial_thread->status = THREAD_RUNNING;
 	initial_thread->tid = allocate_tid ();
-
-
-	/*[project 1]*/
-	initial_thread->priority_before = -1;
-	initial_thread->lock_waiting = NULL;
-	initial_thread->sema_waiting = NULL;
-	initial_thread->receiver = NULL;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -221,28 +214,25 @@ thread_create (const char *name, int priority,
 	t->tf.eflags = FLAG_IF;
 
 	/*Relinquish lock if p(new) > p(curr)*/
-	bool compare = (thread_current()->priority < t->priority) ?  true : false;
+	//bool compare = (thread_current()->priority < t->priority) ?  true : false;
 	
 	
 	/* Preemption --> utilize interrupt mechanism to
 	 * suspend current executing process and invoke scheduler
 	 * to determine what process to execute next
 	 * */
-	
-	
+	//msg("DEFAULT: %s", PRI_DEFAULT);	
+	//msg("thread %d created", thread_name());
+	//msg("with thread priority %d", t->priority);
 
 	/* Add to run queue. */
 	//msg("lock held by current thread? %d ", lock_held_by_current_thread(aux));
 	//msg("current thread priortiy: %d", thread_get_priority());
 	thread_unblock (t);
 	
-	old_level = intr_disable();
-	if (compare)
-	{
-		thread_yield();	
-	}
-	
-	intr_set_level(old_level);
+	//old_level = intr_disable();
+	check_yield_condition();
+	//intr_set_level(old_level);
 	return tid;
 }
 
@@ -256,42 +246,39 @@ void
 thread_block (void) {
 	ASSERT (!intr_context ());
 	ASSERT (intr_get_level () == INTR_OFF);
-
-	/*[project 1] 
-	 * find the receiver_thread that the current_thread will donate to  
-	 * if the priority of current_thread is greater
-	 * */
-
 	struct thread *curr = thread_current();
-	struct thread *receiver;
-
-	if (curr->lock_waiting != NULL)
-	{
-		receiver = curr->lock_waiting->holder;
-		if(receiver->priority < curr->priority)
-			donate_priority(curr, receiver);
-
-	}
-
-	else if (curr->sema_waiting !=NULL)
-	{
-		struct semaphore *sema = curr->sema_waiting;
-		struct lock *lock = sema->lock;
-		receiver = lock->holder;
-		if (receiver->priority < curr->priority)
-			donate_priority(curr, receiver); 
-	}
-
-	thread_current ()->status = THREAD_BLOCKED;
+	curr->status = THREAD_BLOCKED;
 	schedule ();
 }
 
 void donate_priority(struct thread *donor, struct thread *receiver)
 {
-	if (receiver->priority_before == -1)
-		receiver->priority_before = receiver->priority;
-	receiver->priority = donor->priority;
-	donor->receiver = receiver;	
+	enum intr_level old_level = intr_disable();
+	update_priority(receiver);
+	if(receiver->status == THREAD_READY)
+	{
+		list_remove(&receiver->elem);
+		list_push_back(&ready_list, &receiver->elem);
+		sort_ready_list();
+	}
+
+	intr_set_level(old_level);
+}
+
+void update_priority(struct thread *t)
+{
+	enum intr_level old_level = intr_disable();
+	int priority_tmp = t->priority_before;
+	if(!list_empty(&t->locks))
+	{
+		list_sort(&t->locks, compare_priority_locks, NULL);
+		int lock_priority = list_entry(list_front(&t->locks), struct lock, elem)
+			->max_priority;
+		if(lock_priority > priority_tmp)
+			priority_tmp = lock_priority;
+	}
+	t->priority = priority_tmp;
+	intr_set_level(old_level);
 }
 
 
@@ -311,15 +298,9 @@ thread_unblock (struct thread *t) {
 
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED);
-	list_push_back (&ready_list, &t->elem);
-	
 	/*[project 1]*/
+	list_push_back (&ready_list, &t->elem);
 	sort_ready_list();
-	if (t->receiver != NULL)
-	{
-		take_back_priority(t->receiver);
-		t->receiver = NULL;
-	}
 
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
@@ -385,15 +366,15 @@ thread_yield (void) {
 	enum intr_level old_level;
 
 	ASSERT (!intr_context ());
-
+	//printf("ready list size: %ld \n", sizeof(ready_list)/sizeof(list_front(&ready_list)));
 	old_level = intr_disable ();
 	if (curr != idle_thread)
 	{
 		list_push_back (&ready_list, &curr->elem);
-		sort_ready_list();
+		//sort_ready_list();
 	}
 	/* [project 1] sort ready list after the current thread has yielded */
-	//sort_ready_list();
+	sort_ready_list();
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -404,21 +385,18 @@ thread_set_priority (int new_priority)
 {
 	enum intr_level old_intr = intr_disable();
 	struct thread *curr = thread_current();
-	if (curr->priority_before == -1)
-	{
-		curr->priority_before = new_priority;
-	} else {
-		curr->priority = new_priority;
-	}
+	int priority_before_change = curr->priority;
+	
+	curr->priority_before = new_priority;
 
-	if (!list_empty(&ready_list))
+	if (new_priority < priority_before_change && !list_empty(&curr->locks))
 	{
-		struct thread *next = list_entry(list_front(&ready_list), struct thread, elem);
-		if (next->priority > new_priority)
-			thread_yield();
+		//check_yield_condition();
+		curr->priority = new_priority;
+		check_yield_condition();
 	}
 	intr_set_level(old_intr);
-	thread_current ()->priority = new_priority;
+	//curr->priority = new_priority;
 }
 
 /* Returns the current thread's priority. */
@@ -524,7 +502,9 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
 
-	t->priority_before = -1;
+	t->priority_before = priority;
+	t->lock_waiting = NULL;
+	list_init(&t->locks);
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -775,12 +755,58 @@ bool compare_priority(const struct list_elem *element_a, const struct list_elem 
 	
 	bool val = (thread_A->priority > thread_B->priority) ? true : false;
 	return val;
-}	
+}
+
+/*[project 1] compare max_priorities between two locks*/
+bool compare_priority_locks(const struct list_elem *ele_a, const struct list_elem *ele_b, void *aux UNUSED)
+{
+	struct lock *lock_A = list_entry(ele_a, struct lock, elem);
+	struct lock *lock_B = list_entry(ele_b, struct lock, elem);
+	bool val = (lock_A->max_priority > lock_B->max_priority ) ? true : false;
+
+	return val;
+}
 
 /* [project 1] function to sort the ready_list according to priority */
 void sort_ready_list(void)
 {
 	list_sort(&ready_list, compare_priority, NULL);
+}
+
+void check_yield_condition(void)
+{
+	enum intr_level old_level = intr_disable();
+	if (!list_empty(&ready_list) && thread_current()->priority < 
+			list_entry(list_front(&ready_list), struct thread, elem)->priority)
+	{
+		thread_yield();
+	}
+	intr_set_level(old_level);
+}
+
+void thread_add_lock(struct lock *lock)
+{
+	enum intr_level old_level = intr_disable();
+	struct thread *curr = thread_current();
+	list_push_back(&curr->locks, &lock->elem);
+	list_sort(&(curr->locks), compare_priority_locks, NULL);
+
+	if(lock->max_priority > curr->priority)
+	{
+		curr->priority = lock->max_priority;
+		check_yield_condition();
+	}
+
+	intr_set_level(old_level);
+}
+
+void thread_remove_lock(struct lock *lock)
+{
+	enum intr_level old_level = intr_disable();
+	struct thread *curr = thread_current();
+	list_remove(&lock->elem);
+	update_priority(curr);
+	intr_set_level(old_level);
 }
 
 
