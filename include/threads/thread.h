@@ -152,6 +152,7 @@ void thread_awake_sleep(int64_t ticks_now);
 
 bool compare_priority(const struct list_elem * , const struct list_elem *, void *);
 bool compare_priority_locks(const struct list_elem *, const struct list_elem *, void *);
+//bool compare_priority_sema(const struct list_elem *, const struct list_elem *, void *);
 void sort_ready_list(void);
 
 void donate_priority(struct thread *, struct thread *);
