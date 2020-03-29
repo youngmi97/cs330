@@ -242,6 +242,7 @@ thread_block (void) {
 	//struct thread *curr = thread_current();
 	thread_current ()->status = THREAD_BLOCKED;
 	schedule ();
+	//do_schedule(THREAD_BLOCKED);
 }
 
 void donate_priority(struct thread *donor UNUSED, struct thread *receiver)
@@ -299,6 +300,8 @@ thread_unblock (struct thread *t) {
 	list_insert_ordered(&ready_list, &t->elem, compare_priority, NULL);
 
 	t->status = THREAD_READY;
+
+	check_yield_condition();
 	intr_set_level (old_level);
 	//printf("leaving thread_unblock\n");
 }
@@ -327,6 +330,7 @@ thread_current (void) {
 	   of stack, so a few big automatic arrays or moderate
 	   recursion can cause stack overflow. */
 	ASSERT (is_thread (t));
+	//printf("thread status: %d \n", t->status);
 	ASSERT (t->status == THREAD_RUNNING);
 
 	return t;
@@ -370,7 +374,9 @@ thread_yield (void) {
 	}
 	/* [project 1] sort ready list after the current thread has yielded */
 	//sort_ready_list();
-	do_schedule (THREAD_READY);
+	//do_schedule (THREAD_READY);
+	curr->status = THREAD_READY;
+	schedule();
 	intr_set_level (old_level);
 }
 
@@ -712,6 +718,7 @@ static void
 schedule (void) {
 	struct thread *curr = running_thread ();
 	struct thread *next = next_thread_to_run ();
+	//printf("next thread to run: %d \n", next->priority);
 
 	ASSERT (intr_get_level () == INTR_OFF);
 	ASSERT (curr->status != THREAD_RUNNING);
@@ -788,13 +795,19 @@ void sort_ready_list(void)
 
 void check_yield_condition(void)
 {
-	enum intr_level old_level = intr_disable();
+	//enum intr_level old_level = intr_disable();
+	
+	if (list_empty(&ready_list))
+		return;
+
 	if (!list_empty(&ready_list) && thread_current()->priority < 
 			list_entry(list_front(&ready_list), struct thread, elem)->priority)
 	{
-		thread_yield();
+		if(intr_context())
+			intr_yield_on_return();
+		else thread_yield();
 	}
-	intr_set_level(old_level);
+	//intr_set_level(old_level);
 }
 
 void thread_add_lock(struct lock *lock)

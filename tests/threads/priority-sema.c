@@ -22,20 +22,16 @@ test_priority_sema (void)
 
   sema_init (&sema, 0);
   thread_set_priority (PRI_MIN);
-  msg("priority set");
   for (i = 0; i < 10; i++) 
     {
-      msg("for loop iteration: %d", i);
       int priority = PRI_DEFAULT - (i + 3) % 10 - 1;
       char name[16];
       snprintf (name, sizeof name, "priority %d", priority);
       thread_create (name, priority, priority_sema_thread, NULL);
-      msg("thread created");
     }
 
   for (i = 0; i < 10; i++) 
     {
-      msg("for loop iteration back: %d", i);
       sema_up (&sema);
       msg ("Back in main thread."); 
     }

@@ -70,6 +70,7 @@ sema_down (struct semaphore *sema) {
 	while (sema->value == 0) {
 		
 		struct thread *curr = thread_current();
+		//list_push_back(&sema->waiters, &curr->elem);
 		/*[project 1] designate the thread's dependent sem and lock */
 		//list_sort(&sema->waiters, compare_priority, NULL);
 		list_insert_ordered(&sema->waiters, &curr->elem, compare_priority, NULL);
@@ -112,24 +113,24 @@ sema_try_down (struct semaphore *sema) {
 void
 sema_up (struct semaphore *sema) {
 
-	//printf("at sema_up \n");
 	enum intr_level old_level;
 
 	ASSERT (sema != NULL);
-
+	
 	old_level = intr_disable ();
+
+	sema->value++;
 	if (!list_empty (&sema->waiters))
 	{
 		/*[project 1]*/
 		//struct thread *curr = thread_current();
-		//list_sort(&sema->waiters, compare_priority, NULL);
+		list_sort(&sema->waiters, compare_priority, NULL);
 		//printf("at sema_up sema_waiters not empty \n");
 		thread_unblock (list_entry (list_pop_front (&sema->waiters),
 					struct thread, elem));
 	}
 	
-		
-	sema->value++;
+	//sema->value++;
 	if (!intr_context())	
 		check_yield_condition();
 	intr_set_level (old_level);
@@ -241,7 +242,7 @@ lock_acquire (struct lock *lock) {
 		thread_add_lock(lock);
 	}
 	
-	lock->holder = thread_current ();
+	lock->holder = curr;
 	intr_set_level(old_level);
 	//sort_ready_list();
 }
@@ -371,7 +372,6 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED) {
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (lock_held_by_current_thread (lock));
-
 	if (!list_empty (&cond->waiters))
 	{
 		list_sort(&cond->waiters, compare_priority_sema, NULL);
@@ -393,6 +393,7 @@ bool compare_priority_sema (const struct list_elem *ele_a, const struct list_ele
 		return true;
 	if (list_empty(&sem_A->semaphore.waiters))
 		return false;
+
 
 	tA = list_entry(list_front(&sem_A->semaphore.waiters), struct thread, elem);
 	tB = list_entry(list_front(&sem_B->semaphore.waiters),struct thread, elem);
