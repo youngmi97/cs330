@@ -189,7 +189,7 @@ thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
 	struct thread *t;
 	tid_t tid;
-	enum intr_level old_level;
+	//enum intr_level old_level;
 
 	ASSERT (function != NULL);
 
@@ -202,7 +202,7 @@ thread_create (const char *name, int priority,
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
 
-	old_level = intr_disable();
+	//old_level = intr_disable();
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -219,11 +219,11 @@ thread_create (const char *name, int priority,
 	 * suspend current executing process and invoke scheduler
 	 * to determine what process to execute next
 	 * */
-	intr_set_level(old_level);
+	//intr_set_level(old_level);
 	/* Add to run queue. */
 	thread_unblock (t);
 	
-	old_level = intr_disable();
+	enum intr_level old_level = intr_disable();
 	check_yield_condition();
 	intr_set_level(old_level);
 	return tid;
@@ -385,8 +385,6 @@ void
 thread_set_priority (int new_priority)
 {
 	//printf("for thread: %s \n", thread_current ()->name);
-	//printf("changing priority to: %d \n", new_priority);
-	//printf("from previous priority: %d \n", thread_current ()->priority);
 	
 	//printf("priority from %d to %d \n", thread_current ()-> priority, new_priority);
 	enum intr_level old_intr;
@@ -398,7 +396,7 @@ thread_set_priority (int new_priority)
 
 	update_priority(curr);
 	
-	if (priority_before_change < thread_current() -> priority  )
+	if (priority_before_change < thread_current() -> priority && !list_empty(&curr->locks)  )
 	{
 		struct lock *l = curr->lock_waiting;
 		donate_priority(curr, l->holder);
@@ -406,14 +404,10 @@ thread_set_priority (int new_priority)
 
 	if (thread_current()-> priority < priority_before_change && !list_empty(&curr->locks))
 	{
-		//check_yield_condition();
 		curr->priority = new_priority;
 		check_yield_condition();
 	}
 	intr_set_level(old_intr);
-	//curr->priority = new_priority;
-	//printf("priority of %s is now %d \n", thread_current ()->name, curr->priority );
-	//
 	//to handle double lock acquire/ release from the (msg) instructions
 	thread_yield();
 }

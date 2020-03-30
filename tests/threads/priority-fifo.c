@@ -35,7 +35,7 @@ test_priority_fifo (void)
   struct lock lock;
   int *output, *op;
   int i, cnt;
-
+	
   /* This test does not work with the MLFQS. */
   ASSERT (!thread_mlfqs);
 
@@ -49,8 +49,8 @@ test_priority_fifo (void)
   output = op = malloc (sizeof *output * THREAD_CNT * ITER_CNT * 2);
   ASSERT (output != NULL);
   lock_init (&lock);
-
   thread_set_priority (PRI_DEFAULT + 2);
+  msg("starting loop \n");
   for (i = 0; i < THREAD_CNT; i++) 
     {
       char name[16];
