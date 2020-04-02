@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/fixed-point.h" // [project 1]
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -82,8 +83,13 @@ typedef int tid_t;
  * ready state is on the run queue, whereas only a thread in the
  * blocked state is on a semaphore wait list. */
 struct thread {
-	// timer ticks to wake up
-	int64_t ticks_to_wake_up;
+	int64_t ticks_to_wake_up;			/* Timer ticks to wake up */
+	struct list aquired_locks;			/* Locks that thread aquired */
+	struct lock *blocking_lock;			/* lock that block thread */
+	int original_priority;				/* priority before donation */
+	int nice;							/* niceness for mlfqs */
+	struct fixed_1714 recent_cpu;		/* recent cpu as 17.14 fixed point */
+	struct list_elem mlfqs_elem;		/* along list of all threads */
 
 	/* Owned by thread.c. */
 	tid_t tid;                          /* Thread identifier. */
@@ -140,5 +146,22 @@ void do_iret (struct intr_frame *tf);
 
 void thread_register_sleep(int64_t ticks_to_wake_up);
 void thread_awake_sleep(int64_t ticks_now);
+
+void thread_donate_blockers();
+void thread_reperioritize_from_waiters(void);
+void thread_sort_ready_list(void);
+void thread_try_yield(void);
+
+void thread_update_load_avg(void);
+void thread_update_recent_cpu(void);
+void thread_increment_recent_cpu(void);
+void thread_reperioritize_mlfqs(void);
+
+enum cmp_policy {
+	less = false,
+	greater = true,
+};
+bool thread_cmp_priority(const struct list_elem*, const struct list_elem*, void*);
+bool thread_cmp_awake_tick(const struct list_elem*, const struct list_elem*, void*);
 
 #endif /* threads/thread.h */

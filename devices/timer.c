@@ -128,8 +128,18 @@ timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
 
-	// [project 1] awake all threads
+	// [project 1] awake all threads and do mlfqs
 	thread_awake_sleep(timer_ticks());
+	if(thread_mlfqs) {
+		thread_increment_recent_cpu();
+		if(ticks % TIMER_FREQ == 0) { // per one second
+			thread_update_load_avg();
+			thread_update_recent_cpu();
+		}
+		if(ticks % 4 == 0) {
+			thread_reperioritize_mlfqs();
+		}
+	}
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

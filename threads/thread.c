@@ -31,6 +31,9 @@ static struct list ready_list;
 /* [project 1] List of processes sleeping after timer_sleep() */
 static struct list sleep_list;
 
+/* [project 1] List of all processes as implementing mlfqs */
+static struct list mlfqs_list;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -56,6 +59,9 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
+
+/* [project 1] system load average */
+static struct fixed_1714 load_avg;
 
 static void kernel_thread (thread_func *, void *aux);
 
@@ -113,6 +119,9 @@ thread_init (void) {
 	list_init (&ready_list);
 	list_init (&sleep_list);
 	list_init (&destruction_req);
+	if(thread_mlfqs) {
+		list_init (&mlfqs_list);
+	}
 
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();
@@ -211,6 +220,13 @@ thread_create (const char *name, int priority,
 	/* Add to run queue. */
 	thread_unblock (t);
 
+	// [project 1]
+	if(thread_mlfqs) { // inheritance of niceness
+		t->nice = thread_current()->nice;
+	}
+	// try to yield CPU to higher priority thread
+	thread_try_yield();
+
 	return tid;
 }
 
@@ -244,7 +260,12 @@ thread_unblock (struct thread *t) {
 
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED);
-	list_push_back (&ready_list, &t->elem);
+	//list_push_back (&ready_list, &t->elem);
+	// [project 1] insert ordered as priority
+	list_insert_ordered(&ready_list, &t->elem, thread_cmp_priority, greater);
+	// this affects 1) priority scheduling, and
+	// 2) round robin for each prirority ready queue of mlfqs
+
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
 }
@@ -292,6 +313,10 @@ thread_exit (void) {
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
+	// [project 1] remove from mlfqs list
+	if(thread_mlfqs) {
+		list_remove(&thread_current()->mlfqs_elem);
+	}
 	do_schedule (THREAD_DYING);
 	NOT_REACHED ();
 }
@@ -306,8 +331,12 @@ thread_yield (void) {
 	ASSERT (!intr_context ());
 
 	old_level = intr_disable ();
-	if (curr != idle_thread)
-		list_push_back (&ready_list, &curr->elem);
+	// if (curr != idle_thread)
+	// 	list_push_back (&ready_list, &curr->elem);
+	// [project 1] push back (round robin) for each priority
+	// NOTE : DON'T YIELD too much!!!
+	if(curr != idle_thread)
+		list_insert_ordered(&ready_list, &curr->elem, thread_cmp_priority, greater);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -315,7 +344,18 @@ thread_yield (void) {
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) {
-	thread_current ()->priority = new_priority;
+	//thread_current ()->priority = new_priority;
+	enum intr_level old_level = intr_disable();
+	struct thread *curr = thread_current();
+	curr->original_priority = new_priority;
+	if(thread_mlfqs) {
+		curr->priority = new_priority; // this would not be called
+		// TODO : needless?
+	} else {
+		thread_reperioritize_from_waiters();
+	}
+	thread_try_yield();
+	intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -328,27 +368,31 @@ thread_get_priority (void) {
 void
 thread_set_nice (int nice UNUSED) {
 	/* TODO: Your implementation goes here */
+	ASSERT(nice >= -20 && nice <= 20);
+	thread_current()->nice = nice;
+	thread_reperioritize_mlfqs(); // NOTE : this automatically calls try_yield.
+	//DON'T call another yield.
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) {
 	/* TODO: Your implementation goes here */
-	return 0;
+	return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) {
 	/* TODO: Your implementation goes here */
-	return 0;
+	return fp_f2i_to_zero(fp_mult_fi(load_avg, 100));
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) {
 	/* TODO: Your implementation goes here */
-	return 0;
+	return fp_f2i_to_zero(fp_mult_fi(thread_current()->recent_cpu, 100));
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -413,6 +457,15 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
+
+	// [project 1]
+	list_init(&t->aquired_locks);
+	t->original_priority = priority;
+	if(thread_mlfqs) {
+		enum intr_level old_level = intr_disable();
+		list_push_back(&mlfqs_list, &t->mlfqs_elem);
+		intr_set_level(old_level);
+	}
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -474,7 +527,8 @@ thread_register_sleep(int64_t ticks_to_wake_up) {
 	}
 	
 	curr->ticks_to_wake_up = ticks_to_wake_up;
-	list_push_back(&sleep_list, &(curr->elem));
+	// list ordered!
+	list_insert_ordered(&sleep_list, &(curr->elem), thread_cmp_awake_tick, less);
 	//printf("thread %p sleep %lld\n", curr, ticks_to_wake_up);
 
 	// blocking curr, rather than looping
@@ -506,10 +560,196 @@ thread_awake_sleep(int64_t ticks_now) {
 			// TODO: is this really needed?
 
 			thread_unblock(here);
+		} else {
+			break; // as sleep_list is ordered!
 		}
 	}
 }
 
+/* [project 1] Priority donation : when higher priority thread is blocked by a lock,
+it donates its priority to lock takers, recursively.
+NOTE : interrupt must be disabled ahead outside. */
+void
+thread_donate_blockers() {
+	struct thread *th = thread_current();
+	int new_priority = th->priority;
+
+	int donation_remain = 10; // it limits donation chain
+	while(donation_remain > 0) {
+		struct lock *lock = th->blocking_lock;
+		if(lock == NULL) break;
+
+		struct thread *blocker = lock->holder;
+		ASSERT(is_thread(blocker));
+
+		if(blocker->priority < new_priority) {
+			blocker->priority = new_priority;
+		} else {
+			break;
+		}
+
+		th = blocker; // chain
+		--donation_remain;
+	}
+}
+
+/* [project 1] Recalculate priority of current thread,
+as giving up donated priority(lock release) or newly getting donation(lock acquire)..
+NOTE : interrupt must be disabled ahead outside. */
+void
+thread_reperioritize_from_waiters() {
+	struct thread *curr = thread_current();
+
+	int ret = curr->original_priority;
+	struct list_elem *begin = list_begin(&curr->aquired_locks);
+	struct list_elem *end = list_end(&curr->aquired_locks);
+
+	for(struct list_elem *it = begin; it != end; it = list_next(it)) {
+		struct lock *lock = list_entry(it, struct lock, elem);
+		struct list *waiters = &(lock->semaphore.waiters);
+
+		for(struct list_elem *wit = list_begin(waiters);
+			wit != list_end(waiters);
+			wit = list_next(wit)) {
+			struct thread *th = list_entry(wit, struct thread, elem);
+			ASSERT(is_thread(th));
+
+			if(ret < th->priority) ret = th->priority;
+		}
+	}
+
+	curr->priority = ret;
+}
+
+/* [project 1] Sort ready list by priority.
+NOTE : interrupt must be disabled ahead outside. */
+void
+thread_sort_ready_list() {
+	list_sort(&ready_list, thread_cmp_priority, greater);
+}
+
+/* [project 1] try to yield current to higher priority thread, if any
+ in ready_list */
+void
+thread_try_yield() {
+	enum intr_level old_level = intr_disable();
+
+	if(!list_empty(&ready_list)) {
+		int priority_now = thread_get_priority();
+
+		struct list_elem *begin = list_begin(&ready_list);
+		struct thread *highest = list_entry(begin, struct thread, elem);
+		ASSERT(is_thread(highest));
+
+		const bool YIELD = highest->priority > priority_now;
+		if(YIELD) {
+			if(intr_context()) intr_yield_on_return();
+			else thread_yield();
+		}
+	}
+
+	intr_set_level(old_level);
+}
+
+/* [project 1] calculate load_avg (will be done per a second) */
+void
+thread_update_load_avg() {
+	int32_t not_idle = (int32_t)(thread_current() != idle_thread);
+	int32_t ready_threads = (int32_t)list_size(&ready_list) + not_idle;
+
+	load_avg = fp_lerp_i(load_avg, fp_i2f(ready_threads), 1, 60);
+}
+
+/* [project 1] update recent_cpu for every threads */
+void
+thread_update_recent_cpu() {
+	ASSERT(thread_mlfqs);
+	enum intr_level old_level = intr_disable();
+
+	struct fixed_1714 load_avg_2 = fp_mult_fi(load_avg, 2);
+	struct fixed_1714 load_avg_2_plus_1 = fp_plus_fi(load_avg_2, 1);
+	struct fixed_1714 load_avg_factor = fp_div_ff(load_avg_2, load_avg_2_plus_1);
+
+	struct list_elem *begin = list_begin(&mlfqs_list);
+	struct list_elem *end = list_end(&mlfqs_list);
+	for(struct list_elem *it = begin; it != end; it = list_next(it)) {
+		struct thread *th = list_entry(it, struct thread, mlfqs_elem);
+		
+		// idle thread must be excluded
+		if(th == idle_thread) continue;
+
+		th->recent_cpu = fp_plus_fi(fp_mult_ff(load_avg_factor, th->recent_cpu), th->nice);
+	}
+
+	intr_set_level(old_level);
+}
+
+/* [project 1] increment current recent cpu */
+void
+thread_increment_recent_cpu() {
+	struct thread *curr = thread_current();
+
+	// idle thread must be excluded
+	if(curr == idle_thread) return;
+
+	curr->recent_cpu = fp_plus_fi(curr->recent_cpu, 1);
+}
+
+/* [project 1] recalculate priority of all threads as mlfqs 
+NOTE : this will finally call try_yield */
+void
+thread_reperioritize_mlfqs() {
+	enum intr_level old_level = intr_disable();
+
+	struct list_elem *begin = list_begin(&mlfqs_list);
+	struct list_elem *end = list_end(&mlfqs_list);
+
+	for(struct list_elem *it = begin; it != end; it = list_next(it)) {
+		struct thread *th = list_entry(it, struct thread, mlfqs_elem);
+		ASSERT(is_thread(th));
+
+		struct fixed_1714 rc_4 = fp_div_fi(th->recent_cpu, 4);
+		th->priority = fp_clamp_i(
+			fp_minus_fi(fp_minus_ff(fp_i2f(PRI_MAX), rc_4), th->nice * 2),
+			PRI_MIN, PRI_MAX, fp_f2i_nearest
+		); // NOTE : fp_f2i_nearest must be used instead of to_zero
+	}
+
+	thread_sort_ready_list();
+	thread_try_yield();
+
+	intr_set_level(old_level);
+}
+
+/* [project 1] compare function of threads w.r.t. priority.
+aux should be set as either 'less' or 'greater'. (default 0 indicates 'less') */
+bool
+thread_cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux) {
+	enum cmp_policy policy = (enum cmp_policy)aux;
+	const struct thread *at = list_entry(a, struct thread, elem);
+	const struct thread *bt = list_entry(b, struct thread, elem);
+	
+	if(policy == greater) {
+		return at->priority > bt->priority;
+	}
+	return at->priority < bt->priority;
+}
+
+/* [project 1] compare function of threads w.r.t. ticks_to_wake_up.
+aux should be set as either 'less' or 'greater'. (default 0 indicates 'less') */
+bool
+thread_cmp_awake_tick(const struct list_elem *a, const struct list_elem *b, void *aux) {
+	enum cmp_policy policy = (enum cmp_policy)aux;
+	const struct thread *at = list_entry(a, struct thread, elem);
+	const struct thread *bt = list_entry(b, struct thread, elem);
+
+	if(policy == greater) {
+		return at->ticks_to_wake_up > bt->ticks_to_wake_up;
+	}
+	return at->ticks_to_wake_up < bt->ticks_to_wake_up;
+}
+
+/* [project 1] compare function of threads
 
 /** static functions **/
 
