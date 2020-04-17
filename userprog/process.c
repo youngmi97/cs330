@@ -40,6 +40,7 @@ process_init (void) {
  * Notice that THIS SHOULD BE CALLED ONCE. */
 tid_t
 process_create_initd (const char *file_name) {
+	printf("in process_create_initd ----- \n");
 	char *fn_copy;
 	tid_t tid;
 
@@ -52,8 +53,12 @@ process_create_initd (const char *file_name) {
 
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
-	if (tid == TID_ERROR)
+	printf("[process_create_initd] tid is: %d \n", tid);
+	if (tid == TID_ERROR) {
+		printf("tid ERROR ----- \n");
 		palloc_free_page (fn_copy);
+	}
+		
 	return tid;
 }
 
@@ -63,9 +68,10 @@ initd (void *f_name) {
 #ifdef VM
 	supplemental_page_table_init (&thread_current ()->spt);
 #endif
-
+	
+	
 	process_init ();
-
+	printf("process initialized \n");
 	if (process_exec (f_name) < 0)
 		PANIC("Fail to launch initd\n");
 	NOT_REACHED ();
@@ -173,11 +179,13 @@ process_exec (void *f_name) {
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
 
+	printf("++++++++++++++++++++++++++++++++++++++++++ \n");
+
 	/* We first kill the current context */
 	process_cleanup ();
 
 	/* And then load the binary */
-	success = load (file_name, &_if);
+	success = load (f_name, &_if);
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -185,6 +193,7 @@ process_exec (void *f_name) {
 		return -1;
 
 	/* Start switched process. */
+	printf("starting process?\n");
 	do_iret (&_if);
 	NOT_REACHED ();
 }
@@ -328,17 +337,52 @@ load (const char *file_name, struct intr_frame *if_) {
 	off_t file_ofs;
 	bool success = false;
 	int i;
+	
+	
+	
 
-	/* Allocate and activate page directory. */
+	//[project 2] make sure file open is directed at the correct fileName
+	char *fileName;
+	char **argv;
+	int argc = 0;
+
+	argv = (char **) palloc_get_page(0);
+
+
+	if (argv == NULL)
+	{
+		printf("argv is NULL\n");
+		free(argv);
+		goto fail;
+	}
+
+	char *token;
+	char *save_ptr;
+	for (token = strtok_r(file_name, " ", &save_ptr); token!=NULL; 
+			token = strtok_r(NULL, " ", &save_ptr))
+	{
+		argv[argc] = token;
+		printf("parsed_token: %s \n", token);
+		argc += 1;
+	}
+	
+	// may have to check for running without any tokens?
+	fileName = argv [0];
+	
+	printf("argc is : %d \n", argc);
+	printf("fileName: %s\n", fileName);
+
+	/* Allocate and activate page directory.  */
+	// pml4 --> amd's page table
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
 		goto done;
 	process_activate (thread_current ());
 
 	/* Open executable file. */
-	file = filesys_open (file_name);
+	file = filesys_open (fileName);
 	if (file == NULL) {
-		printf ("load: %s: open failed\n", file_name);
+		printf ("load: %s: open failed\n", fileName);
 		goto done;
 	}
 
@@ -408,20 +452,91 @@ load (const char *file_name, struct intr_frame *if_) {
 	}
 
 	/* Set up stack. */
+	//stack setup faile routine has to be called
 	if (!setup_stack (if_))
-		goto done;
-
+	{
+		printf("setup stack failed \n");
+		success = false;
+		goto fail;
+	}
 	/* Start address. */
 	if_->rip = ehdr.e_entry;
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 
+
+	//[project 2] perhaps set up the registers for the interrupt frame here?
+
+	//now push the argument to the stack
+	//save the address of the arguments to arg_addr
+	uint32_t **arg_addr =( uint32_t**)  calloc(argc , sizeof(uint32_t*));
+	if (arg_addr == NULL)
+	{
+		printf("arg_addr is NULL \n");
+		goto fail;
+	}
+
+	// assume less than 8 bits per argv element
+	uint8_t *curr_ptr = (uint8_t *) USER_STACK;
+
+	//push to stack and update curr_stack_ptr
+	int arg_ind = argc -1;
+	for (int i = arg_ind; i >= 0; i--)
+	{
+		int str_length  = strlen(argv[i]);
+		//account for the NULL sentinel
+		str_length ++;
+		curr_ptr -= str_length;
+
+		memcpy(curr_ptr, argv[i], str_length);
+		arg_addr[i] = (uint32_t *)curr_ptr;
+
+	}
+	
+	//word-align
+	//check how many more excess bits than multiples of uintptr_t
+	//alignment through tagging 0 on the remaining address
+	int buf = ((uint32_t) curr_ptr) % sizeof(uintptr_t);
+	for (int i=0; i< buf; i++)
+	{
+		*(--curr_ptr) = 0;
+	}
+
+	//push argument address 
+	//from the start of the arg_addr to the end
+	
+	uint32_t *curr_addr_ptr = (uint8_t *) curr_ptr;
+	for (int i=0; i <argc; i++)
+	{
+		*(--curr_addr_ptr) = (uint32_t) arg_addr[i];
+	}
+	free(arg_addr);
+
+	//point %rsi register to argv[0] addr
+	if_->R.rsi = curr_addr_ptr;
+	//point %rdi register to argc
+	if_->R.rdi = argc;
+
+	//push return addr to stack
+	*(--curr_addr_ptr) = 0;
+	
+
+	printf("done with stack op \n");
+	if_->rsp = curr_addr_ptr;
+	
+	
+
 	success = true;
+	goto done;
 
 done:
 	/* We arrive here whether the load is successful or not. */
+	printf("arrived at done\n");
 	file_close (file);
+	return success;
+fail:
+	printf("load failed\n");
 	return success;
 }
 
@@ -500,6 +615,9 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 	ASSERT (ofs % PGSIZE == 0);
 
 	file_seek (file, ofs);
+	/*[Note] Looped until assigned amount of bytes and buffer are allocated
+	 * or unless memory allocation fails
+	 */
 	while (read_bytes > 0 || zero_bytes > 0) {
 		/* Do calculate how to fill this page.
 		 * We will read PAGE_READ_BYTES bytes from FILE
@@ -539,6 +657,8 @@ setup_stack (struct intr_frame *if_) {
 	uint8_t *kpage;
 	bool success = false;
 
+	printf("in setup_stack FIRST \n");
+
 	kpage = palloc_get_page (PAL_USER | PAL_ZERO);
 	if (kpage != NULL) {
 		success = install_page (((uint8_t *) USER_STACK) - PGSIZE, kpage, true);
@@ -569,6 +689,17 @@ install_page (void *upage, void *kpage, bool writable) {
 			&& pml4_set_page (t->pml4, upage, kpage, writable));
 }
 #else
+
+
+
+
+
+
+
+
+
+
+
 /* From here, codes will be used after project 3.
  * If you want to implement the function for only project 2, implement it on the
  * upper block. */
@@ -632,6 +763,36 @@ setup_stack (struct intr_frame *if_) {
 	 * TODO: If success, set the rsp accordingly.
 	 * TODO: You should mark the page is stack. */
 	/* TODO: Your code goes here */
+	
+
+	//[project 2] Get page and push arguments onto the stack
+	uint8_t *page;
+	//get from user pool, and initialize to zero
+	page = palloc_get_page(PAL_USER | PAL_ZERO);
+
+	printf("in setup_stack \n");
+
+	if (page != NULL)
+	{
+		printf("page allocated is not NULL\n");
+		//page successfully attained from the user pool
+		//install attained page to stack_bottom
+		//set writable to true
+		if (install_page(stack_bottom, page, true))
+		{
+			//successfully installed page
+			//place arguments on the created stack space
+			//set the rsp to the bottom of the stack
+			printf("install page success \n");
+			
+			success = true;
+			//if_->rsp = stack_bottom;
+			
+
+		}
+		else
+			palloc_free_page(page);
+	}
 
 	return success;
 }

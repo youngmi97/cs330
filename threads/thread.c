@@ -641,7 +641,7 @@ thread_try_yield() {
 		struct thread *highest = list_entry(begin, struct thread, elem);
 		ASSERT(is_thread(highest));
 
-		const bool YIELD = highest->priority > priority_now;
+		const bool YIELD = highest->priority >=  priority_now;
 		if(YIELD) {
 			if(intr_context()) intr_yield_on_return();
 			else thread_yield();

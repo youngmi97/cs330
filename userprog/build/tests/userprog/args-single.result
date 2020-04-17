@@ -1,0 +1,28 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (args) begin
+  (args) argc = 2
+  (args) argv[0] = 'args-single'
+  (args) argv[1] = 'onearg'
+  (args) argv[2] = null
+  (args) end
+  args-single: exit(0)
+Differences in `diff -u' format:
+- (args) begin
+- (args) argc = 2
+- (args) argv[0] = 'args-single'
+- (args) argv[1] = 'onearg'
+- (args) argv[2] = null
+- (args) end
+- args-single: exit(0)
++ in process_create_initd ----- 
++ process initialized 
++ ++++++++++++++++++++++++++++++++++++++++++ 
++ parsed_token: args-single 
++ parsed_token: onearg 
++ argc is : 2 
++ fileName: args-single
++ [process_create_initd] tid is: 3 
++ in filesys_open ------- 
