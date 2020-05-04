@@ -28,6 +28,10 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
+/* List of all processes.  Processes are added to this list
+   when they are first scheduled and removed when they exit. */
+static struct list all_list;
+
 /* [project 1] List of processes sleeping after timer_sleep() */
 static struct list sleep_list;
 
@@ -114,11 +118,13 @@ thread_init (void) {
 	};
 	lgdt (&gdt_ds);
 
-	/* Init the globla thread context */
+	/* Init the global thread context */
 	lock_init (&tid_lock);
 	list_init (&ready_list);
 	list_init (&sleep_list);
 	list_init (&destruction_req);
+	list_init (&all_list);
+
 	if(thread_mlfqs) {
 		list_init (&mlfqs_list);
 	}
@@ -137,7 +143,15 @@ thread_start (void) {
 	/* Create the idle thread. */
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
+	printf("[thread_start] calling thread_create\n");
 	thread_create ("idle", PRI_MIN, idle, &idle_started);
+	printf("[thread_start] thread created \n");
+
+	struct thread* curr = thread_current();
+	printf("[thread_start] current thread id: %d \n", curr->tid);
+	printf("[thread_start] current thread status: %s \n", curr->status);
+
+	
 
 	/* Start preemptive thread scheduling. */
 	intr_enable ();
@@ -192,6 +206,7 @@ thread_print_stats (void) {
 tid_t
 thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
+
 	struct thread *t;
 	tid_t tid;
 
@@ -226,7 +241,6 @@ thread_create (const char *name, int priority,
 	}
 	// try to yield CPU to higher priority thread
 	thread_try_yield();
-
 	return tid;
 }
 
@@ -313,6 +327,9 @@ thread_exit (void) {
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
+	
+	thread_current()->is_exit=true;
+  	list_remove (&thread_current()->allelem);
 	// [project 1] remove from mlfqs list
 	if(thread_mlfqs) {
 		list_remove(&thread_current()->mlfqs_elem);
@@ -327,6 +344,9 @@ void
 thread_yield (void) {
 	struct thread *curr = thread_current ();
 	enum intr_level old_level;
+	//printf("[thread_yield] current thread id: %d \n", curr->tid);
+	//printf("[thread_yield] current thread status: %s \n", curr->status);
+
 
 	ASSERT (!intr_context ());
 
@@ -337,6 +357,7 @@ thread_yield (void) {
 	// NOTE : DON'T YIELD too much!!!
 	if(curr != idle_thread)
 		list_insert_ordered(&ready_list, &curr->elem, thread_cmp_priority, greater);
+	//curr->status = THREAD_READY;
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -409,6 +430,7 @@ idle (void *idle_started_ UNUSED) {
 	struct semaphore *idle_started = idle_started_;
 
 	idle_thread = thread_current ();
+	printf("[idle] current thread id: %d \n", idle_thread->tid);
 	sema_up (idle_started);
 
 	for (;;) {
@@ -451,12 +473,26 @@ init_thread (struct thread *t, const char *name, int priority) {
 	ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
 	ASSERT (name != NULL);
 
+
+	//[project 2]
+	printf("init_thread \n");
+	int i=0;
+  	t->childSize = 0;
+  	for(i=0;i<MAX_CHILD;++i)
+    	t->child_list[i] = 0;
+
+	t->is_exit=false;
+	t->return_value = 0;
+
+
 	memset (t, 0, sizeof *t);
 	t->status = THREAD_BLOCKED;
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
+
+
 
 	// [project 1]
 	list_init(&t->aquired_locks);
@@ -466,6 +502,29 @@ init_thread (struct thread *t, const char *name, int priority) {
 		list_push_back(&mlfqs_list, &t->mlfqs_elem);
 		intr_set_level(old_level);
 	}
+
+	//[project 2]
+	list_push_back (&all_list, &t->allelem);
+}
+
+
+
+//[project 2]
+struct thread* get_thread(tid_t tid)
+{
+    struct list_elem *e;
+    
+    for (e = list_begin (&all_list); 
+         e != list_end (&all_list);
+         e = list_next (e))
+    {
+      struct thread *t = list_entry (e, struct thread, allelem);
+      if( t != NULL && t->tid == tid){
+          return t;
+      }
+    }    
+    
+    return NULL;
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

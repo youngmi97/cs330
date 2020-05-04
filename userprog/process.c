@@ -23,7 +23,7 @@
 #endif
 
 static void process_cleanup (void);
-static bool load (const char *file_name, struct intr_frame *if_);
+static bool load (const char *file_name, struct intr_frame *if_, char ** token_ptr);
 static void initd (void *f_name);
 static void __do_fork (void *);
 
@@ -40,9 +40,10 @@ process_init (void) {
  * Notice that THIS SHOULD BE CALLED ONCE. */
 tid_t
 process_create_initd (const char *file_name) {
-	printf("in process_create_initd ----- \n");
+	printf("[process_create_initd] called \n");
 	char *fn_copy;
 	tid_t tid;
+	char *token_ptr;
 
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
@@ -51,9 +52,18 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
+	file_name = strtok_r((char *) file_name, " ", &token_ptr);
+
 	/* Create a new thread to execute FILE_NAME. */
+	printf("[process_create_initd] creating thread to execute initd \n");
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
-	printf("[process_create_initd] tid is: %d \n", tid);
+
+	struct thread *curr = thread_current();
+	curr->child_list[curr->childSize] = tid;
+    curr->childSize++;
+
+
+	printf("[process_create_initd] created tid is: %d \n", tid);
 	if (tid == TID_ERROR) {
 		printf("tid ERROR ----- \n");
 		palloc_free_page (fn_copy);
@@ -71,7 +81,8 @@ initd (void *f_name) {
 	
 	
 	process_init ();
-	printf("process initialized \n");
+	
+	printf("[initd] calling process_exec \n");
 	if (process_exec (f_name) < 0)
 		PANIC("Fail to launch initd\n");
 	NOT_REACHED ();
@@ -169,6 +180,7 @@ error:
 int
 process_exec (void *f_name) {
 	char *file_name = f_name;
+	char *token_ptr = NULL;
 	bool success;
 
 	/* We cannot use the intr_frame in the thread structure.
@@ -179,13 +191,13 @@ process_exec (void *f_name) {
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
 
-	printf("++++++++++++++++++++++++++++++++++++++++++ \n");
+	printf("[process_exec]++++++++++++++++++++++++++++++++++++++++++ \n");
 
 	/* We first kill the current context */
 	process_cleanup ();
-
+	file_name = strtok_r(file_name, " ", &token_ptr);
 	/* And then load the binary */
-	success = load (f_name, &_if);
+	success = load (file_name, &_if, &token_ptr);
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -193,7 +205,7 @@ process_exec (void *f_name) {
 		return -1;
 
 	/* Start switched process. */
-	printf("starting process?\n");
+	printf("[process_exec] call do_iret\n");
 	do_iret (&_if);
 	NOT_REACHED ();
 }
@@ -213,7 +225,35 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	return -1;
+	struct thread *t = NULL, *cur = thread_current();
+	printf("[process_wait] current tid: %d \n", cur->tid);
+	printf("[process_wait] child_tid tid: %d \n", child_tid);
+
+    int i = 0;
+    bool is_child = false;
+
+    t = get_thread(child_tid);
+
+        
+    for (i = 0; i < cur->childSize; ++i)
+    {
+        if (child_tid == cur->child_list[i])
+        {
+            is_child = true;
+			if(is_child)
+				printf("[process_wait] found child\n");
+        }
+    }
+        
+    if (is_child && t != NULL && t->status != THREAD_DYING && t->tid != -1)
+    {
+        while (t->is_exit == false)
+			printf("[process_wait] waiting \n");
+			
+        return t->return_value;
+    }
+
+    return -1;
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -329,8 +369,207 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * Stores the executable's entry point into *RIP
  * and its initial stack pointer into *RSP.
  * Returns true if successful, false otherwise. */
+
+
+
+
+
+
+
+/*
+ * Writes given arg to stack using given stack pointer
+ */
+static bool write_arg_to_stack(uintptr_t **rsp, struct list *arg_list);
+
+/*
+ * Writes 4byte adress to stack
+ */
+static bool write_add_to_stack(struct intr_frame *if_, uintptr_t **rsp, struct list *arg_list);
+
+/*
+ * Initializes list and Creates list of arguments
+ */
+static bool create_arg_list(struct list *arg_list,
+                            struct argument args[],
+                            const char * file_name,
+                            char **token_ptr);
+
+
+/*
+ * Adjust stack pointer so that stack pointer becames divisible by 4.
+ */
+static bool word_alignment(uintptr_t **rsp);
+
+/*
+ * Writes argument number to stack using memcpy and given argc value
+ */
+static bool write_argc_to_stack(struct intr_frame *if_, uintptr_t **rsp, int argc);
+
+/*
+ * Writes fake return address(which is 0) to stack.
+ */
+static bool write_ret_add_to_stack(struct intr_frame *if_, uintptr_t **rsp);
+
+
+
+static bool setup_arguments( uintptr_t **rsp, struct intr_frame *if_, char **token_ptr, const char * file_name)
+{
+	printf("rsp in setup args: %x \n", if_->rsp);
+    struct list arg_list;
+    struct argument args[MAX_ARG];
+
+	//printf("[setup_arguments] filename: %s \n", file_name);
+
+    /* Initialize and create arg list using token_ptr and file_name */
+    create_arg_list(&arg_list, args, file_name, token_ptr);
+
+    /* Begin processing arguments from end of the list, stack style */
+    write_arg_to_stack(rsp, &arg_list);
+
+    /* Adjust word alignment */
+    word_alignment(rsp);
+
+    //printf("WORD ALIGNED! SP: %p\n", *rsp);
+
+    /* Write arg address to stack */
+    write_add_to_stack(if_, rsp, &arg_list);
+
+    //printf("ADDRESSES LOADED ! SP: %p\n", *rsp);
+
+    /* Write argc to stack */
+    write_argc_to_stack(if_, rsp,  list_size(&arg_list));
+
+    //printf("ARGC LOADED!\n");
+
+    /* Write return adress which is 0 to stack */
+    write_ret_add_to_stack(if_, rsp);
+
+    //printf("RETURN ADD LOADED! SP: %p\n", *rsp);
+    //hex_dump((int)(*rsp),*rsp,100,true);
+
+    return true;
+}
+
+static bool write_ret_add_to_stack(struct intr_frame *if_, uintptr_t **rsp)
+{
+    *rsp -= sizeof (uintptr_t *);
+    memset(*rsp, 0, sizeof (uintptr_t *));
+    //printf("w_add--> sp:%p written:%d\n", *rsp, *(int*) *rsp);
+	if_->rsp = *rsp;
+    return true;
+}
+
+static bool write_argc_to_stack(struct intr_frame *if_, uintptr_t **rsp, int argc)
+{
+    *rsp -= sizeof (int);
+    memcpy(*rsp, &argc, sizeof (int));
+	
+    //printf("w_argc--> sp:%p written:%d\n", *rsp, *(int*) *rsp);
+	if_->R.rdi = *rsp;
+    return true;
+}
+
+static bool word_alignment(uintptr_t **rsp)
+{
+    unsigned int word_align = 0;
+
+    if ((word_align = (unsigned int) *rsp % 4) != 0)
+    {
+        *rsp -= word_align;
+        memset(*rsp, 0, word_align);
+    }
+
+    return true;
+}
+
+static bool create_arg_list(struct list *arg_list,
+                            struct argument args[],
+                            const char * file_name,
+                            char **token_ptr)
+{
+    char *token = NULL;
+    int i = 0;
+    /* Initialize list as empty list */
+    list_init(arg_list);
+
+    i = 0;
+    for (token = (char*) file_name;
+         token != NULL;
+         token = strtok_r(NULL, " ", token_ptr))
+    {/* Add each argument to argument list which will be used as stack */
+
+        args[i].arg = token;
+        args[i].len = strnlen(token, ARGLEN);
+        list_push_back(arg_list, &args[i].elem);
+        ++i;
+
+        //printf("-->%s\n", token);
+    }
+
+    return true;
+}
+
+static bool write_arg_to_stack(uintptr_t **rsp, struct list *arg_list)
+{
+    struct list_elem *arg_elem = NULL;
+    struct argument *curr_arg = NULL;
+
+    for (arg_elem = list_rbegin(arg_list);
+         arg_elem != list_rend(arg_list);
+         arg_elem = list_prev(arg_elem))
+    {
+        curr_arg = list_entry(arg_elem, struct argument, elem);
+        //printf("w_arg--> %p , %s", *rsp, curr_arg->arg);
+        *rsp -= curr_arg->len + 1; /* Create room for argument in stack */
+        curr_arg->rsp = *rsp; /* Save address of string */
+        memcpy(*rsp, curr_arg->arg, curr_arg->len + 1); /* Copy argument to stack */
+        //printf("__w_arg--> %p %p , %s\n", *rsp, curr_arg->rsp, curr_arg->arg);
+    }
+
+    return true;
+}
+
+
+static bool write_add_to_stack(struct intr_frame *if_, uintptr_t **rsp, struct list *arg_list)
+{
+    struct list_elem *arg_elem = NULL;
+    struct argument *curr_arg = NULL;
+    char *argv = NULL;
+
+    /* Write NULL to stack,means end of the arg list */
+    *rsp -= sizeof (char *);
+    memset(*rsp, 0, sizeof (char *));
+    //printf("w_add--> sp:%p [NULL]\n", *rsp);
+
+    for (arg_elem = list_rbegin(arg_list);
+         arg_elem != list_rend(arg_list);
+         arg_elem = list_prev(arg_elem))
+    {
+        curr_arg = list_entry(arg_elem, struct argument, elem);
+        *rsp -= sizeof (char*); /* Allocate space for pointer */
+        memcpy(*rsp, &curr_arg->rsp, sizeof (char*)) /* Write ptr to stack */;
+        //printf("w_add--> sp:%p written:%p ,arg: %s\n", *rsp, curr_arg->rsp, curr_arg->arg);
+    }
+
+    /* Write address of argument array to stack */
+    argv = *rsp;
+    *rsp -= sizeof (char **);
+    memcpy(*rsp, &argv, sizeof (char **));
+    //printf("w_add--> sp:%p written:%p\n", *rsp, argv);
+	if_->R.rsi = *rsp;
+
+    return true;
+}
+
+
+
+
+
+
+
+
 static bool
-load (const char *file_name, struct intr_frame *if_) {
+load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 	struct thread *t = thread_current ();
 	struct ELF ehdr;
 	struct file *file = NULL;
@@ -338,39 +577,6 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 	
-	
-	
-
-	//[project 2] make sure file open is directed at the correct fileName
-	char *fileName;
-	char **argv;
-	int argc = 0;
-
-	argv = (char **) palloc_get_page(0);
-
-
-	if (argv == NULL)
-	{
-		printf("argv is NULL\n");
-		free(argv);
-		goto fail;
-	}
-
-	char *token;
-	char *save_ptr;
-	for (token = strtok_r(file_name, " ", &save_ptr); token!=NULL; 
-			token = strtok_r(NULL, " ", &save_ptr))
-	{
-		argv[argc] = token;
-		printf("parsed_token: %s \n", token);
-		argc += 1;
-	}
-	
-	// may have to check for running without any tokens?
-	fileName = argv [0];
-	
-	printf("argc is : %d \n", argc);
-	printf("fileName: %s\n", fileName);
 
 	/* Allocate and activate page directory.  */
 	// pml4 --> amd's page table
@@ -379,10 +585,12 @@ load (const char *file_name, struct intr_frame *if_) {
 		goto done;
 	process_activate (thread_current ());
 
+
+	printf("[load] calling filesys_open \n");
 	/* Open executable file. */
-	file = filesys_open (fileName);
+	file = filesys_open (file_name);
 	if (file == NULL) {
-		printf ("load: %s: open failed\n", fileName);
+		printf ("load: %s: open failed\n", file_name);
 		goto done;
 	}
 
@@ -455,9 +663,8 @@ load (const char *file_name, struct intr_frame *if_) {
 	//stack setup faile routine has to be called
 	if (!setup_stack (if_))
 	{
-		printf("setup stack failed \n");
-		success = false;
-		goto fail;
+		printf("[load] setup stack failed \n");
+		goto done;
 	}
 	/* Start address. */
 	if_->rip = ehdr.e_entry;
@@ -467,65 +674,28 @@ load (const char *file_name, struct intr_frame *if_) {
 
 
 	//[project 2] perhaps set up the registers for the interrupt frame here?
+	printf("[load] rsp value: %p \n", if_->rsp);
 
-	//now push the argument to the stack
-	//save the address of the arguments to arg_addr
-	uint32_t **arg_addr =( uint32_t**)  calloc(argc , sizeof(uint32_t*));
-	if (arg_addr == NULL)
-	{
-		printf("arg_addr is NULL \n");
-		goto fail;
-	}
 
-	// assume less than 8 bits per argv element
-	uint8_t *curr_ptr = (uint8_t *) USER_STACK;
+	//ERROR FROM HERE ONWARDS 
+	//PRINTS DONT WORK ------- WHY NOT???
+	//GENERAL PROTECTION EXCEPTION with rip ????
 
-	//push to stack and update curr_stack_ptr
-	int arg_ind = argc -1;
-	for (int i = arg_ind; i >= 0; i--)
-	{
-		int str_length  = strlen(argv[i]);
-		//account for the NULL sentinel
-		str_length ++;
-		curr_ptr -= str_length;
+	printf("[load] call setup_arguments \n");
+	printf("[load] file name going into setup_arguments: %s \n", file_name);
+	success = setup_arguments(&if_->rsp, if_, token_ptr, file_name);
+    if (!success)
+    {
+        printf("load: error in setup_arguments \n");
+		goto done;
+    }
 
-		memcpy(curr_ptr, argv[i], str_length);
-		arg_addr[i] = (uint32_t *)curr_ptr;
 
-	}
-	
-	//word-align
-	//check how many more excess bits than multiples of uintptr_t
-	//alignment through tagging 0 on the remaining address
-	int buf = ((uint32_t) curr_ptr) % sizeof(uintptr_t);
-	for (int i=0; i< buf; i++)
-	{
-		*(--curr_ptr) = 0;
-	}
-
-	//push argument address 
-	//from the start of the arg_addr to the end
-	
-	uint32_t *curr_addr_ptr = (uint8_t *) curr_ptr;
-	for (int i=0; i <argc; i++)
-	{
-		*(--curr_addr_ptr) = (uint32_t) arg_addr[i];
-	}
-	free(arg_addr);
-
-	//point %rsi register to argv[0] addr
-	if_->R.rsi = curr_addr_ptr;
-	//point %rdi register to argc
-	if_->R.rdi = argc;
-
-	//push return addr to stack
-	*(--curr_addr_ptr) = 0;
 	
 
-	printf("done with stack op \n");
-	if_->rsp = curr_addr_ptr;
-	
-	
+
+	printf("[load] rsp value: %p \n", if_->rsp);
+
 
 	success = true;
 	goto done;
@@ -535,10 +705,21 @@ done:
 	printf("arrived at done\n");
 	file_close (file);
 	return success;
-fail:
-	printf("load failed\n");
-	return success;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* Checks whether PHDR describes a valid, loadable segment in

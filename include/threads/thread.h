@@ -29,6 +29,7 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+#define MAX_CHILD 100
 
 /* A kernel thread or user process.
  *
@@ -95,6 +96,7 @@ struct thread {
 	int nice;							/* niceness for mlfqs */
 	struct fixed_1714 recent_cpu;		/* recent cpu as 17.14 fixed point */
 	struct list_elem mlfqs_elem;		/* along list of all threads */
+	struct list_elem allelem;           /* List element for all threads list. */
 
 	/* Owned by thread.c. */
 	tid_t tid;                          /* Thread identifier. */
@@ -109,6 +111,10 @@ struct thread {
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
 #endif
+	tid_t child_list[MAX_CHILD];
+    int childSize;
+    volatile bool is_exit;
+	int return_value;
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
 	struct supplemental_page_table spt;
@@ -156,7 +162,9 @@ void do_iret (struct intr_frame *tf);
 void thread_register_sleep(int64_t ticks_to_wake_up);
 void thread_awake_sleep(int64_t ticks_now);
 
-void thread_donate_blockers();
+
+//should this be void?
+void thread_donate_blockers(void);
 void thread_reperioritize_from_waiters(void);
 void thread_sort_ready_list(void);
 void thread_try_yield(void);
@@ -165,6 +173,9 @@ void thread_update_load_avg(void);
 void thread_update_recent_cpu(void);
 void thread_increment_recent_cpu(void);
 void thread_reperioritize_mlfqs(void);
+
+//[project 2]
+struct thread* get_thread(tid_t tid);
 
 enum cmp_policy {
 	less = false,
