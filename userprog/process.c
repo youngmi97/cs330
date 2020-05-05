@@ -45,6 +45,8 @@ process_create_initd (const char *file_name) {
 	tid_t tid;
 	char *token_ptr;
 
+	struct thread *curr = thread_current();
+
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
 	fn_copy = palloc_get_page (0);
@@ -58,7 +60,7 @@ process_create_initd (const char *file_name) {
 	printf("[process_create_initd] creating thread to execute initd \n");
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 
-	struct thread *curr = thread_current();
+	
 	curr->child_list[curr->childSize] = tid;
     curr->childSize++;
 
@@ -83,6 +85,7 @@ initd (void *f_name) {
 	process_init ();
 	
 	printf("[initd] calling process_exec \n");
+	printf("[initd] calling from tid: %d \n", thread_current() -> tid);
 	if (process_exec (f_name) < 0)
 		PANIC("Fail to launch initd\n");
 	NOT_REACHED ();
@@ -247,7 +250,8 @@ process_wait (tid_t child_tid UNUSED) {
         
     if (is_child && t != NULL && t->status != THREAD_DYING && t->tid != -1)
     {
-        while (t->is_exit == false)
+		printf("[process_wait] got tid: %d \n", t->tid);
+        while (t->is_exit == false);
 			printf("[process_wait] waiting \n");
 			
         return t->return_value;
@@ -264,6 +268,10 @@ process_exit (void) {
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
+	printf("[process_exit] called \n");
+	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->status);
+    thread_current()->return_value = thread_current()->status;
+	 
 
 	process_cleanup ();
 }
@@ -379,12 +387,12 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /*
  * Writes given arg to stack using given stack pointer
  */
-static bool write_arg_to_stack(uintptr_t **rsp, struct list *arg_list);
+static bool write_arg_to_stack(uintptr_t *rsp, struct list *arg_list);
 
 /*
  * Writes 4byte adress to stack
  */
-static bool write_add_to_stack(struct intr_frame *if_, uintptr_t **rsp, struct list *arg_list);
+static bool write_add_to_stack(struct intr_frame *if_, uintptr_t *rsp, struct list *arg_list);
 
 /*
  * Initializes list and Creates list of arguments
@@ -398,23 +406,18 @@ static bool create_arg_list(struct list *arg_list,
 /*
  * Adjust stack pointer so that stack pointer becames divisible by 4.
  */
-static bool word_alignment(uintptr_t **rsp);
-
-/*
- * Writes argument number to stack using memcpy and given argc value
- */
-static bool write_argc_to_stack(struct intr_frame *if_, uintptr_t **rsp, int argc);
+static bool word_alignment(uintptr_t *rsp);
 
 /*
  * Writes fake return address(which is 0) to stack.
  */
-static bool write_ret_add_to_stack(struct intr_frame *if_, uintptr_t **rsp);
+static bool write_ret_add_to_stack(struct intr_frame *if_, uintptr_t *rsp);
 
 
 
-static bool setup_arguments( uintptr_t **rsp, struct intr_frame *if_, char **token_ptr, const char * file_name)
+static bool setup_arguments( uintptr_t *rsp, struct intr_frame *if_, char **token_ptr, const char * file_name)
 {
-	printf("rsp in setup args: %x \n", if_->rsp);
+	//printf("rsp in setup args: %x \n", if_->rsp);
     struct list arg_list;
     struct argument args[MAX_ARG];
 
@@ -436,8 +439,9 @@ static bool setup_arguments( uintptr_t **rsp, struct intr_frame *if_, char **tok
 
     //printf("ADDRESSES LOADED ! SP: %p\n", *rsp);
 
-    /* Write argc to stack */
-    write_argc_to_stack(if_, rsp,  list_size(&arg_list));
+    /* Point %rdi to argc */
+    int argc = list_size(&arg_list);
+	if_->R.rdi = argc;
 
     //printf("ARGC LOADED!\n");
 
@@ -450,7 +454,7 @@ static bool setup_arguments( uintptr_t **rsp, struct intr_frame *if_, char **tok
     return true;
 }
 
-static bool write_ret_add_to_stack(struct intr_frame *if_, uintptr_t **rsp)
+static bool write_ret_add_to_stack(struct intr_frame *if_, uintptr_t *rsp)
 {
     *rsp -= sizeof (uintptr_t *);
     memset(*rsp, 0, sizeof (uintptr_t *));
@@ -459,21 +463,11 @@ static bool write_ret_add_to_stack(struct intr_frame *if_, uintptr_t **rsp)
     return true;
 }
 
-static bool write_argc_to_stack(struct intr_frame *if_, uintptr_t **rsp, int argc)
-{
-    *rsp -= sizeof (int);
-    memcpy(*rsp, &argc, sizeof (int));
-	
-    //printf("w_argc--> sp:%p written:%d\n", *rsp, *(int*) *rsp);
-	if_->R.rdi = *rsp;
-    return true;
-}
-
-static bool word_alignment(uintptr_t **rsp)
+static bool word_alignment(uintptr_t *rsp)
 {
     unsigned int word_align = 0;
 
-    if ((word_align = (unsigned int) *rsp % 4) != 0)
+    if ((word_align = (uint8_t) *rsp % 8) != 0)
     {
         *rsp -= word_align;
         memset(*rsp, 0, word_align);
@@ -509,7 +503,7 @@ static bool create_arg_list(struct list *arg_list,
     return true;
 }
 
-static bool write_arg_to_stack(uintptr_t **rsp, struct list *arg_list)
+static bool write_arg_to_stack(uintptr_t *rsp, struct list *arg_list)
 {
     struct list_elem *arg_elem = NULL;
     struct argument *curr_arg = NULL;
@@ -530,11 +524,10 @@ static bool write_arg_to_stack(uintptr_t **rsp, struct list *arg_list)
 }
 
 
-static bool write_add_to_stack(struct intr_frame *if_, uintptr_t **rsp, struct list *arg_list)
+static bool write_add_to_stack(struct intr_frame *if_, uintptr_t *rsp, struct list *arg_list)
 {
     struct list_elem *arg_elem = NULL;
     struct argument *curr_arg = NULL;
-    char *argv = NULL;
 
     /* Write NULL to stack,means end of the arg list */
     *rsp -= sizeof (char *);
@@ -551,11 +544,7 @@ static bool write_add_to_stack(struct intr_frame *if_, uintptr_t **rsp, struct l
         //printf("w_add--> sp:%p written:%p ,arg: %s\n", *rsp, curr_arg->rsp, curr_arg->arg);
     }
 
-    /* Write address of argument array to stack */
-    argv = *rsp;
-    *rsp -= sizeof (char **);
-    memcpy(*rsp, &argv, sizeof (char **));
-    //printf("w_add--> sp:%p written:%p\n", *rsp, argv);
+    //point %rsi to the argv[0] address
 	if_->R.rsi = *rsp;
 
     return true;
@@ -681,24 +670,31 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 	//PRINTS DONT WORK ------- WHY NOT???
 	//GENERAL PROTECTION EXCEPTION with rip ????
 
+	printf("[load] current thread: %d \n", thread_current()->tid);
+
 	printf("[load] call setup_arguments \n");
 	printf("[load] file name going into setup_arguments: %s \n", file_name);
+
+	
+
 	success = setup_arguments(&if_->rsp, if_, token_ptr, file_name);
     if (!success)
     {
         printf("load: error in setup_arguments \n");
-		goto done;
     }
 
+
+	printf("[load] argc from if_: %d \n", if_->R.rdi);
+	printf("[load] argv[0] addr from if_: %p \n", if_->R.rsi);
+
+
+	//setup arguments working perfectly !!! 
+	//hex_dump((int) if_->rsp, if_->rsp, 200, true);
 
 	
 
 
 	printf("[load] rsp value: %p \n", if_->rsp);
-
-
-	success = true;
-	goto done;
 
 done:
 	/* We arrive here whether the load is successful or not. */
@@ -838,7 +834,7 @@ setup_stack (struct intr_frame *if_) {
 	uint8_t *kpage;
 	bool success = false;
 
-	printf("in setup_stack FIRST \n");
+	//printf("in setup_stack FIRST \n");
 
 	kpage = palloc_get_page (PAL_USER | PAL_ZERO);
 	if (kpage != NULL) {

@@ -91,7 +91,7 @@ main (void) {
 	malloc_init ();
 	paging_init (mem_end);
 
-	printf("[main] initialized memory systems\n");
+	//printf("[main] initialized memory systems\n");
 
 #ifdef USERPROG
 	tss_init ();

@@ -69,7 +69,7 @@ filesys_open (const char *name) {
 	if (dir != NULL)
 		dir_lookup (dir, name, &inode);
 	dir_close (dir);
-	printf("in filesys_open ------- \n");
+	//printf("in filesys_open ------- \n");
 
 	return file_open (inode);
 }
@@ -83,7 +83,7 @@ filesys_remove (const char *name) {
 	struct dir *dir = dir_open_root ();
 	bool success = dir != NULL && dir_remove (dir, name);
 	dir_close (dir);
-	printf("in filesys_remove ------- \n");
+	//printf("in filesys_remove ------- \n");
 	return success;
 }
 

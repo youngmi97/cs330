@@ -1,0 +1,41 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (args) begin
+  (args) argc = 1
+  (args) argv[0] = 'args-none'
+  (args) argv[1] = null
+  (args) end
+  args-none: exit(0)
+Differences in `diff -u' format:
+- (args) begin
+- (args) argc = 1
+- (args) argv[0] = 'args-none'
+- (args) argv[1] = null
+- (args) end
+- args-none: exit(0)
++ [run_task] calling process_wait after process_create_initd returns 
++ [process_create_initd] called 
++ [process_create_initd] creating thread to execute initd 
++ [init_thread] called 
++ [init_thread] initializing thread for : args-none 
++ [initd] calling process_exec 
++ [initd] calling from tid: 3 
++ [process_exec]++++++++++++++++++++++++++++++++++++++++++ 
++ [load] calling filesys_open 
++ in filesys_open ------- 
++ in setup_stack FIRST 
++ [load] rsp value: 0x47480000 
++ [load] current thread: 3 
++ [load] call setup_arguments 
++ [load] file name going into setup_arguments: args-none 
++ [load] rsp value: 0x4747ffd8 
++ arrived at done
++ [process_exec] call do_iret
++ [syscall_handler] system call!
++ [fetch_argument] got rsp value: 0x4747fe80 
++ [fetch_argument] got uaddr value: 0x4747fe80 
++ [fetch_argument] not user vaddr 
++ args-none: exit(1)
++ [process_create_initd] created tid is: 3 

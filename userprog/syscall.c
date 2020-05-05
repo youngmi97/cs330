@@ -67,10 +67,14 @@ static void close(int fd);
 
 void
 syscall_init (void) {
-	printf("[syscall_init] called \n");
+	//printf("[syscall_init] called \n");
+    
+
 	write_msr(MSR_STAR, ((uint64_t)SEL_UCSEG - 0x10) << 48  |
 			((uint64_t)SEL_KCSEG) << 32);
 	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
+
+    
 
 	/* The interrupt service rountine should not serve any interrupts
 	 * until the syscall_entry swaps the userland stack to the kernel
@@ -78,77 +82,101 @@ syscall_init (void) {
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
 
-	lock_init(&locker);
-    init_fd_table(&fd_list);
+	
 }
 
 /* The main system call interface */
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
+    lock_init(&locker);
+    init_fd_table(&fd_list);
+
 	printf ("[syscall_handler] system call!\n");
-	int system_call_number = fetch_argument(f->rsp, 0);
+    printf ("[syscall_handler]  initial rdi: %p \n", f->R.rdi);
+    printf ("[syscall_handler]  initial rsi: %p \n", f->R.rsi);
+    printf ("[syscall_handler]  initial rdx: %p \n", f->R.rdx);
+    printf ("[syscall_handler]  initial r10: %p \n", f->R.r10);
+    
+	int system_call_number = f->R.rax;
 
 	printf ("[syscall_handler] system_call_number: %d\n", system_call_number);
 
 
-	 switch (system_call_number)
+	switch (system_call_number)
     {/* Select proper system call */
 
         case SYS_HALT:
+            printf ("[syscall_handler] called SYS_HALT\n");
             halt();
             break; /* Halt the operating system. */
 
         case SYS_EXIT:
+            printf ("[syscall_handler] called SYS_EXIT\n");
             exit((int) fetch_argument(f->rsp, 1));
             break; /* Terminate this process. */
+        
+        case SYS_FORK:
+            printf ("[syscall_handler] called SYS_FORK\n");
+            break;
 
         case SYS_EXEC:
+            printf ("[syscall_handler] called SYS_EXEC\n");
             f->R.rax = exec((const char *) fetch_argument(f->rsp, 1));
             break; /* Start another process. */
 
         case SYS_WAIT:
+            printf ("[syscall_handler] called SYS_WAIT\n");
             f->R.rax= process_wait((tid_t) fetch_argument(f->rsp, 1));
             break; /* Wait for a child process to die. */
 
         case SYS_CREATE:
+            printf ("[syscall_handler] called SYS_CREATE\n");
             f->R.rax = create((const char *) fetch_argument(f->rsp, 1),
                                    (unsigned) fetch_argument(f->rsp, 2));
             break; /* Create a file. */
 
         case SYS_REMOVE:
+            printf ("[syscall_handler] called SYS_REMOVE\n");
             f->R.rax = remove((const char *) fetch_argument(f->rsp, 1));
             break; /* Delete a file. */
 
         case SYS_OPEN:
+            printf ("[syscall_handler] called SYS_OPEN \n");
             f->R.rax = open((const char *) fetch_argument(f->rsp, 1));
             break; /* Open a file. */
 
         case SYS_FILESIZE:
+            printf ("[syscall_handler] called SYS_FILESIZE\n");
             f->R.rax = filesize((int) fetch_argument(f->rsp, 1));
             break; /* Obtain a file's size. */
 
         case SYS_READ:
+            printf ("[syscall_handler] called SYS_READ\n");
             f->R.rax = read((int) fetch_argument(f->rsp, 1),
                                  (void*) fetch_argument(f->rsp, 2),
                                  (unsigned) fetch_argument(f->rsp, 3));
             break; /* Read from a file. */
 
         case SYS_WRITE:
+            printf ("[syscall_handler] called SYS_WRITE\n");
             f->R.rax = write( fetch_argument(f->rsp, 1),
                                   (void*) fetch_argument(f->rsp, 2),
                                   (unsigned) fetch_argument(f->rsp, 3));
             break; /* Write to a file. */
 
         case SYS_SEEK:
+            printf ("[syscall_handler]called SYS_SEEK\n");
             seek((int) fetch_argument(f->rsp, 1), (unsigned) fetch_argument(f->rsp, 2));
             break; /* Change position in a file. */
 
         case SYS_TELL:
+            printf ("[syscall_handler]called SYS_TELL\n");
             f->R.rax = tell((int) fetch_argument(f->rsp, 1));
             break; /* Report current position in a file. */
 
         case SYS_CLOSE:
+            printf ("[syscall_handler] called SYS_CLOSE\n");
             close((int) fetch_argument(f->rsp, 1));
             break; /* Close a file. */
     }
@@ -459,7 +487,7 @@ static unsigned tell(int fd)
 	printf("[fetch_argument] got uaddr value: %p \n", *uaddr);
     if (!is_user_vaddr(uaddr))
     {
-		printf("[fetch_argument] not user vaddr \n");
+		//printf("[fetch_argument] not user vaddr \n");
         exit(EXIT_FAILURE);
     }
 

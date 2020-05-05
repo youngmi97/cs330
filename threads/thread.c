@@ -143,13 +143,13 @@ thread_start (void) {
 	/* Create the idle thread. */
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
-	printf("[thread_start] calling thread_create\n");
+	//printf("[thread_start] calling thread_create\n");
 	thread_create ("idle", PRI_MIN, idle, &idle_started);
-	printf("[thread_start] thread created \n");
+	//printf("[thread_start] thread created \n");
 
 	struct thread* curr = thread_current();
-	printf("[thread_start] current thread id: %d \n", curr->tid);
-	printf("[thread_start] current thread status: %s \n", curr->status);
+	//printf("[thread_start] current thread id: %d \n", curr->tid);
+	//printf("[thread_start] current thread status: %s \n", curr->status);
 
 	
 
@@ -215,8 +215,10 @@ thread_create (const char *name, int priority,
 	/* Allocate thread. */
 	t = palloc_get_page (PAL_ZERO);
 	if (t == NULL)
+	{
+		//printf("[thread_create] tid error \n");
 		return TID_ERROR;
-
+	}
 	/* Initialize thread. */
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
@@ -430,7 +432,7 @@ idle (void *idle_started_ UNUSED) {
 	struct semaphore *idle_started = idle_started_;
 
 	idle_thread = thread_current ();
-	printf("[idle] current thread id: %d \n", idle_thread->tid);
+	//printf("[idle] current thread id: %d \n", idle_thread->tid);
 	sema_up (idle_started);
 
 	for (;;) {
@@ -475,7 +477,10 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 
 	//[project 2]
-	printf("init_thread \n");
+	//printf("[init_thread] called \n");
+
+	//printf("[init_thread] initializing thread for : %s \n", name);
+
 	int i=0;
   	t->childSize = 0;
   	for(i=0;i<MAX_CHILD;++i)
