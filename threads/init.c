@@ -77,14 +77,14 @@ main (void) {
 	/* Break command line into arguments and parse options. */
 	argv = read_command_line ();
 	argv = parse_options (argv);
-	printf("[main] read cli arguments\n");
+	//printf("[main] read cli arguments\n");
 
 	/* Initialize ourselves as a thread so we can use locks,
 	   then enable console locking. */
 	thread_init ();
 	console_init ();
 
-	printf("[main] after thread_init\n");
+	//printf("[main] after thread_init\n");
 
 	/* Initialize memory system. */
 	mem_end = palloc_init ();
@@ -107,13 +107,13 @@ main (void) {
 	exception_init ();
 	syscall_init ();
 #endif
-	printf("[main] calling thread_start\n");
+	//printf("[main] calling thread_start\n");
 	/* Start thread scheduler and enable interrupts. */
 	thread_start ();
 	serial_init_queue ();
 	timer_calibrate ();
 
-	printf("[main] start thread scheduler and enable interrupts\n");
+	//printf("[main] start thread scheduler and enable interrupts\n");
 
 #ifdef FILESYS
 	/* Initialize file system. */
@@ -253,7 +253,7 @@ run_task (char **argv) {
 	if (thread_tests){
 		run_test (task);
 	} else {
-		printf("[run_task] calling process_wait after process_create_initd returns \n");
+		//printf("[run_task] calling process_wait after process_create_initd returns \n");
 		process_wait (process_create_initd (task));
 	}
 #else

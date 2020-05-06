@@ -40,7 +40,7 @@ process_init (void) {
  * Notice that THIS SHOULD BE CALLED ONCE. */
 tid_t
 process_create_initd (const char *file_name) {
-	printf("[process_create_initd] called \n");
+	//printf("[process_create_initd] called \n");
 	char *fn_copy;
 	tid_t tid;
 	char *token_ptr;
@@ -57,7 +57,7 @@ process_create_initd (const char *file_name) {
 	file_name = strtok_r((char *) file_name, " ", &token_ptr);
 
 	/* Create a new thread to execute FILE_NAME. */
-	printf("[process_create_initd] creating thread to execute initd \n");
+	//printf("[process_create_initd] creating thread to execute initd \n");
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 
 	
@@ -65,9 +65,9 @@ process_create_initd (const char *file_name) {
     curr->childSize++;
 
 
-	printf("[process_create_initd] created tid is: %d \n", tid);
+	//printf("[process_create_initd] created tid is: %d \n", tid);
 	if (tid == TID_ERROR) {
-		printf("tid ERROR ----- \n");
+		//printf("tid ERROR ----- \n");
 		palloc_free_page (fn_copy);
 	}
 		
@@ -84,8 +84,8 @@ initd (void *f_name) {
 	
 	process_init ();
 	
-	printf("[initd] calling process_exec \n");
-	printf("[initd] calling from tid: %d \n", thread_current() -> tid);
+	//printf("[initd] calling process_exec \n");
+	//printf("[initd] calling from tid: %d \n", thread_current() -> tid);
 	if (process_exec (f_name) < 0)
 		PANIC("Fail to launch initd\n");
 	NOT_REACHED ();
@@ -194,7 +194,7 @@ process_exec (void *f_name) {
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
 
-	printf("[process_exec]++++++++++++++++++++++++++++++++++++++++++ \n");
+	//printf("[process_exec]++++++++++++++++++++++++++++++++++++++++++ \n");
 
 	/* We first kill the current context */
 	process_cleanup ();
@@ -208,7 +208,7 @@ process_exec (void *f_name) {
 		return -1;
 
 	/* Start switched process. */
-	printf("[process_exec] call do_iret\n");
+	//printf("[process_exec] call do_iret\n");
 	do_iret (&_if);
 	NOT_REACHED ();
 }
@@ -229,8 +229,8 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 	struct thread *t = NULL, *cur = thread_current();
-	printf("[process_wait] current tid: %d \n", cur->tid);
-	printf("[process_wait] child_tid tid: %d \n", child_tid);
+	//printf("[process_wait] current tid: %d \n", cur->tid);
+	//printf("[process_wait] child_tid tid: %d \n", child_tid);
 
     int i = 0;
     bool is_child = false;
@@ -243,17 +243,14 @@ process_wait (tid_t child_tid UNUSED) {
         if (child_tid == cur->child_list[i])
         {
             is_child = true;
-			if(is_child)
-				printf("[process_wait] found child\n");
         }
     }
         
     if (is_child && t != NULL && t->status != THREAD_DYING && t->tid != -1)
     {
-		printf("[process_wait] got tid: %d \n", t->tid);
-        while (t->is_exit == false);
-			printf("[process_wait] waiting \n");
-			
+
+		// Infinite loop until child exits
+		while (t->is_exit == false);
         return t->return_value;
     }
 
@@ -268,9 +265,10 @@ process_exit (void) {
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-	printf("[process_exit] called \n");
-	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->status);
-    thread_current()->return_value = thread_current()->status;
+
+	//printf("[process_exit] called \n");
+	//printf("%s: exit(%d)\n", thread_current()->name, thread_current()->status);
+    //thread_current()->return_value = thread_current()->status;
 	 
 
 	process_cleanup ();
@@ -575,7 +573,7 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 	process_activate (thread_current ());
 
 
-	printf("[load] calling filesys_open \n");
+	//printf("[load] calling filesys_open \n");
 	/* Open executable file. */
 	file = filesys_open (file_name);
 	if (file == NULL) {
@@ -661,21 +659,7 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 
-
-	//[project 2] perhaps set up the registers for the interrupt frame here?
-	printf("[load] rsp value: %p \n", if_->rsp);
-
-
-	//ERROR FROM HERE ONWARDS 
-	//PRINTS DONT WORK ------- WHY NOT???
-	//GENERAL PROTECTION EXCEPTION with rip ????
-
-	printf("[load] current thread: %d \n", thread_current()->tid);
-
-	printf("[load] call setup_arguments \n");
-	printf("[load] file name going into setup_arguments: %s \n", file_name);
-
-	
+	//[project 2] Setting up the argument stack here
 
 	success = setup_arguments(&if_->rsp, if_, token_ptr, file_name);
     if (!success)
@@ -684,21 +668,17 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
     }
 
 
-	printf("[load] argc from if_: %d \n", if_->R.rdi);
-	printf("[load] argv[0] addr from if_: %p \n", if_->R.rsi);
+	//printf("[load] argc from if_: %d \n", if_->R.rdi);
+	//printf("[load] argv[0] addr from if_: %p \n", if_->R.rsi);
+	//printf("[load] rsp value: %p \n", if_->rsp);
 
 
 	//setup arguments working perfectly !!! 
 	//hex_dump((int) if_->rsp, if_->rsp, 200, true);
 
-	
-
-
-	printf("[load] rsp value: %p \n", if_->rsp);
 
 done:
 	/* We arrive here whether the load is successful or not. */
-	printf("arrived at done\n");
 	file_close (file);
 	return success;
 }

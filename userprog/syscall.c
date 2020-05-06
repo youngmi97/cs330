@@ -1,6 +1,7 @@
 #include "userprog/syscall.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <syscall-nr.h>
 #include <console.h>
 
@@ -26,11 +27,11 @@
 static struct lock locker;
 static int fd_gl = 3;
 static struct fd_table fd_list;
+char testblock [50];
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
-
-static uint64_t fetch_argument(uintptr_t rsp, unsigned int arg_num);
+static bool test_read(const uint8_t *uaddr, unsigned size);
 
 /* System call.
  *
@@ -47,7 +48,6 @@ static uint64_t fetch_argument(uintptr_t rsp, unsigned int arg_num);
 
 
 /* Read and write data from/to user space */
-static uint64_t get_user_word(const uint64_t *uaddr);
 static int64_t get_user(const uint8_t *uaddr);
 //static bool put_user (uint8_t *udst, uint8_t byte);
 
@@ -82,6 +82,7 @@ syscall_init (void) {
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
 
+
 	
 }
 
@@ -92,92 +93,96 @@ syscall_handler (struct intr_frame *f UNUSED) {
     lock_init(&locker);
     init_fd_table(&fd_list);
 
-	printf ("[syscall_handler] system call!\n");
-    printf ("[syscall_handler]  initial rdi: %p \n", f->R.rdi);
-    printf ("[syscall_handler]  initial rsi: %p \n", f->R.rsi);
-    printf ("[syscall_handler]  initial rdx: %p \n", f->R.rdx);
-    printf ("[syscall_handler]  initial r10: %p \n", f->R.r10);
+	//printf ("[syscall_handler] system call!\n");
     
 	int system_call_number = f->R.rax;
 
-	printf ("[syscall_handler] system_call_number: %d\n", system_call_number);
-
+	//printf ("[syscall_handler] system_call_number: %d\n", system_call_number);
+    //printf ("[syscall_handler] first argument: %p \n", f->R.rdi);
+    //if (system_call_number == 5)
+    //{
+    //    printf ("[syscall_handler]  get_user result: %llx \n", is_user_vaddr(f->R.rdi));
+    //    bool under_kernel = f->R.rdi <= KERN_BASE ? true : false;
+    //    printf("[syscall_handler] under kernel? : %d\n", under_kernel);
+    //    printf("[syscall_handler] memory page : %d\n", test_read(f->R.rdi, f->R.rsi));
+        
+    //}
 
 	switch (system_call_number)
     {/* Select proper system call */
 
         case SYS_HALT:
-            printf ("[syscall_handler] called SYS_HALT\n");
+            //printf ("[syscall_handler] called SYS_HALT\n");
             halt();
             break; /* Halt the operating system. */
 
         case SYS_EXIT:
-            printf ("[syscall_handler] called SYS_EXIT\n");
-            exit((int) fetch_argument(f->rsp, 1));
+            //printf ("[syscall_handler] called SYS_EXIT\n");
+            exit((int) f->R.rdi);
             break; /* Terminate this process. */
         
         case SYS_FORK:
-            printf ("[syscall_handler] called SYS_FORK\n");
+            //printf ("[syscall_handler] called SYS_FORK\n");
             break;
 
         case SYS_EXEC:
-            printf ("[syscall_handler] called SYS_EXEC\n");
-            f->R.rax = exec((const char *) fetch_argument(f->rsp, 1));
+            //printf ("[syscall_handler] called SYS_EXEC\n");
+            f->R.rax = exec((const char *) f->R.rdi);
             break; /* Start another process. */
 
         case SYS_WAIT:
-            printf ("[syscall_handler] called SYS_WAIT\n");
-            f->R.rax= process_wait((tid_t) fetch_argument(f->rsp, 1));
+            //printf ("[syscall_handler] called SYS_WAIT\n");
+            f->R.rax= process_wait((tid_t) f->R.rdi);
             break; /* Wait for a child process to die. */
 
         case SYS_CREATE:
-            printf ("[syscall_handler] called SYS_CREATE\n");
-            f->R.rax = create((const char *) fetch_argument(f->rsp, 1),
-                                   (unsigned) fetch_argument(f->rsp, 2));
+            //printf ("[syscall_handler] called SYS_CREATE\n");
+            f->R.rax = create((const char *) f->R.rdi,
+                                   (unsigned) f->R.rsi);
             break; /* Create a file. */
 
         case SYS_REMOVE:
-            printf ("[syscall_handler] called SYS_REMOVE\n");
-            f->R.rax = remove((const char *) fetch_argument(f->rsp, 1));
+            //printf ("[syscall_handler] called SYS_REMOVE\n");
+            f->R.rax = remove((const char *) f->R.rdi);
             break; /* Delete a file. */
 
         case SYS_OPEN:
-            printf ("[syscall_handler] called SYS_OPEN \n");
-            f->R.rax = open((const char *) fetch_argument(f->rsp, 1));
+            //printf ("[syscall_handler] called SYS_OPEN \n");
+            f->R.rax = open((const char *) f->R.rdi);
             break; /* Open a file. */
 
         case SYS_FILESIZE:
-            printf ("[syscall_handler] called SYS_FILESIZE\n");
-            f->R.rax = filesize((int) fetch_argument(f->rsp, 1));
+            //printf ("[syscall_handler] called SYS_FILESIZE\n");
+            f->R.rax = filesize((int) f->R.rdi);
             break; /* Obtain a file's size. */
 
         case SYS_READ:
-            printf ("[syscall_handler] called SYS_READ\n");
-            f->R.rax = read((int) fetch_argument(f->rsp, 1),
-                                 (void*) fetch_argument(f->rsp, 2),
-                                 (unsigned) fetch_argument(f->rsp, 3));
+            //printf ("[syscall_handler] called SYS_READ\n");
+            f->R.rax = read((int) f->R.rdi,
+                                 (void*) f->R.rsi,
+                                 (unsigned) f->R.rdx);
             break; /* Read from a file. */
 
         case SYS_WRITE:
-            printf ("[syscall_handler] called SYS_WRITE\n");
-            f->R.rax = write( fetch_argument(f->rsp, 1),
-                                  (void*) fetch_argument(f->rsp, 2),
-                                  (unsigned) fetch_argument(f->rsp, 3));
+            //printf ("[syscall_handler] called SYS_WRITE\n");
+            f->R.rax = write( f->R.rdi,
+                                  (void*) f->R.rsi,
+                                  (unsigned) f->R.rdx);
             break; /* Write to a file. */
 
         case SYS_SEEK:
-            printf ("[syscall_handler]called SYS_SEEK\n");
-            seek((int) fetch_argument(f->rsp, 1), (unsigned) fetch_argument(f->rsp, 2));
+            //printf ("[syscall_handler]called SYS_SEEK\n");
+            seek((int) f->R.rdi, (unsigned) f->R.rsi);
             break; /* Change position in a file. */
 
         case SYS_TELL:
-            printf ("[syscall_handler]called SYS_TELL\n");
-            f->R.rax = tell((int) fetch_argument(f->rsp, 1));
+            //printf ("[syscall_handler]called SYS_TELL\n");
+            f->R.rax = tell((int) f->R.rdi);
             break; /* Report current position in a file. */
 
         case SYS_CLOSE:
-            printf ("[syscall_handler] called SYS_CLOSE\n");
-            close((int) fetch_argument(f->rsp, 1));
+            //printf ("[syscall_handler] called SYS_CLOSE\n");
+            close((int) f->R.rdi);
             break; /* Close a file. */
     }
 
@@ -406,16 +411,15 @@ static bool create(const char *file, unsigned initial_size)
     bool status;
 
     lock_acquire(&locker);
-    
-    if (!is_user_vaddr(file))
+
+    if (!test_read(file, initial_size))
     {
+        //printf("[create] invalid pointer\n");
         lock_release(&locker);
         exit(-1);
     }
     
     status = filesys_create(file, initial_size);
-
-    //printf("\n[ '%s' , init_size: %d create stat:%d]\n",file,initial_size,status);
 
     lock_release(&locker);
     return status;
@@ -473,41 +477,19 @@ static unsigned tell(int fd)
     return tell;
 }
 
-
-
-
-/*
- * Returns integer from stack
+/**
+ * Prematurely check to see if the memory region is unmapped
  */
- static uint64_t
- fetch_argument(uintptr_t rsp, unsigned int arg_num)
+
+static bool test_read(const uint8_t *uaddr, unsigned size)
 {
-	printf("[fetch_argument] got rsp value: %p \n", rsp);
-    const uint64_t *uaddr = &rsp + arg_num * 4;
-	printf("[fetch_argument] got uaddr value: %p \n", *uaddr);
-    if (!is_user_vaddr(uaddr))
-    {
-		//printf("[fetch_argument] not user vaddr \n");
-        exit(EXIT_FAILURE);
-    }
+    bool result = false;
 
-    return get_user_word(uaddr);
-}
+    if(uaddr == NULL || !is_user_vaddr(uaddr) || !memcmp(testblock, uaddr, size))
+        return result;
 
-/*
- * Gets 8bytes from user memory space begining adress uaddr
- */
-static uint64_t
-get_user_word(const uint64_t *uaddr)
-{
-    int lsb, msb, sec, thrd;
-
-    lsb = get_user((uint8_t *)uaddr);
-    sec = get_user((uint8_t *)uaddr + 1) << 8;
-    thrd = get_user((uint8_t *)uaddr + 2) << 16;
-    msb = get_user((uint8_t *)uaddr + 3) << 24;
-
-    return msb + thrd + sec + lsb;
+    result = true;
+    return result;
 }
 
 
@@ -518,8 +500,7 @@ get_user_word(const uint64_t *uaddr)
 static int64_t
 get_user (const uint8_t *uaddr) {
     int64_t result;
-	if (!is_user_vaddr(uaddr))
-        exit(EXIT_FAILURE);
+
     __asm __volatile (
 	"movabsq $done_get, %0\n"
 	"movzbq %1, %0\n"
