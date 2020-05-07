@@ -1,0 +1,13 @@
+FAIL
+Kernel panic in run: PANIC at ../../filesys/directory.c:133 in dir_add(): assertion `name != NULL' failed.
+Call stack: 0x800421894c 0x800421f8f0 0x800421e908 0x800421dc84 0x800421d97c 0x800421d771 0x4000fd 0x40015b 0x400bfc
+Translation of call stack:
+0x000000800421894c: debug_panic (lib/kernel/debug.c:32)
+0x000000800421f8f0: dir_add (filesys/directory.c:136)
+0x000000800421e908: filesys_create (filesys/filesys.c:51 (discriminator 3))
+0x000000800421dc84: open (userprog/syscall.c:275)
+0x000000800421d97c: syscall_handler (userprog/syscall.c:151)
+0x000000800421d771: no_sti (userprog/syscall-entry.o:?)
+0x00000000004000fd: (unknown)
+0x000000000040015b: (unknown)
+0x0000000000400bfc: (unknown)

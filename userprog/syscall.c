@@ -27,11 +27,9 @@
 static struct lock locker;
 static int fd_gl = 3;
 static struct fd_table fd_list;
-char testblock [50];
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
-static bool test_read(const uint8_t *uaddr, unsigned size);
 
 /* System call.
  *
@@ -104,7 +102,6 @@ syscall_handler (struct intr_frame *f UNUSED) {
     //    printf ("[syscall_handler]  get_user result: %llx \n", is_user_vaddr(f->R.rdi));
     //    bool under_kernel = f->R.rdi <= KERN_BASE ? true : false;
     //    printf("[syscall_handler] under kernel? : %d\n", under_kernel);
-    //    printf("[syscall_handler] memory page : %d\n", test_read(f->R.rdi, f->R.rsi));
         
     //}
 
@@ -408,18 +405,16 @@ static int write(int fd, const void *buffer, unsigned size)
 
 static bool create(const char *file, unsigned initial_size)
 {
-    bool status;
 
     lock_acquire(&locker);
 
-    if (!test_read(file, initial_size))
+    if (file == NULL || !is_user_vaddr(file) )
     {
-        //printf("[create] invalid pointer\n");
         lock_release(&locker);
         exit(-1);
     }
     
-    status = filesys_create(file, initial_size);
+    bool status = filesys_create(file, initial_size);
 
     lock_release(&locker);
     return status;
@@ -477,37 +472,7 @@ static unsigned tell(int fd)
     return tell;
 }
 
-/**
- * Prematurely check to see if the memory region is unmapped
- */
 
-static bool test_read(const uint8_t *uaddr, unsigned size)
-{
-    bool result = false;
-
-    if(uaddr == NULL || !is_user_vaddr(uaddr) || !memcmp(testblock, uaddr, size))
-        return result;
-
-    result = true;
-    return result;
-}
-
-
-/* Reads a byte at user virtual address UADDR.
- * UADDR must be below KERN_BASE.
- * Returns the byte value if successful, -1 if a segfault
- * occurred. */
-static int64_t
-get_user (const uint8_t *uaddr) {
-    int64_t result;
-
-    __asm __volatile (
-	"movabsq $done_get, %0\n"
-	"movzbq %1, %0\n"
-	"done_get:\n"
-	: "=&a" (result) : "m" (*uaddr));
-    return result;
-}
 
 
 

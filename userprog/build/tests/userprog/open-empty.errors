@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/home/team49/Pintos/cs330/utils/pintos", line 6, in <module>
+    import tempfile
+  File "/usr/lib/python3.5/tempfile.py", line 184, in <module>
+    from random import Random as _Random
+  File "/usr/lib/python3.5/random.py", line 45, in <module>
+    from hashlib import sha512 as _sha512
+  File "<frozen importlib._bootstrap>", line 969, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 958, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 673, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 661, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 739, in get_code
+  File "<frozen importlib._bootstrap_external>", line 271, in cache_from_source
+KeyboardInterrupt
