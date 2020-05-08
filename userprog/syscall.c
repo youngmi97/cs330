@@ -72,6 +72,9 @@ syscall_init (void) {
 			((uint64_t)SEL_KCSEG) << 32);
 	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
 
+    lock_init(&locker);
+    init_fd_table(&fd_list);
+
     
 
 	/* The interrupt service rountine should not serve any interrupts
@@ -80,30 +83,20 @@ syscall_init (void) {
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
 
-
-	
 }
 
 /* The main system call interface */
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-    lock_init(&locker);
-    init_fd_table(&fd_list);
+    //lock_init(&locker);
+    //init_fd_table(&fd_list);
 
 	//printf ("[syscall_handler] system call!\n");
     
 	int system_call_number = f->R.rax;
 
 	//printf ("[syscall_handler] system_call_number: %d\n", system_call_number);
-    //printf ("[syscall_handler] first argument: %p \n", f->R.rdi);
-    //if (system_call_number == 5)
-    //{
-    //    printf ("[syscall_handler]  get_user result: %llx \n", is_user_vaddr(f->R.rdi));
-    //    bool under_kernel = f->R.rdi <= KERN_BASE ? true : false;
-    //    printf("[syscall_handler] under kernel? : %d\n", under_kernel);
-        
-    //}
 
 	switch (system_call_number)
     {/* Select proper system call */
@@ -259,25 +252,23 @@ static int open(const char *file)
     struct file * file_ptr = NULL; /* opened file by filesys_open */
     int fd = -1;
 
+
     lock_acquire(&locker);
 
-    if (!is_user_vaddr(file))
+    if (!is_user_vaddr(file) || file == NULL)
     {
         lock_release(&locker);
         exit(-1);
     }
 
-    filesys_create(file, 500);
-
     file_ptr = filesys_open(file);
-
-    if (file_ptr != NULL)
+    if (file_ptr == NULL)
     {
-        fd = add_file(&fd_list, file_ptr);
+        lock_release(&locker);
+        return -1;
     }
 
-    //printf("\nOpen %s, fd:%d, owner :%d , lsize:%d\n", file, fd, get_file_owner(&fd_list, fd), fd_list.size);
-
+    fd = add_file(&fd_list, file_ptr);
     lock_release(&locker);
 
     return fd;
@@ -304,6 +295,8 @@ static void close(int fd)
 
 static int read(int fd, void *buffer, unsigned length)
 {
+    //printf("at read syscall \n");
+    //printf("input length requested: %d \n", length);
     int retVal = -1;
     unsigned int counterForLoop;
     struct file* file_ptr = NULL;
@@ -349,8 +342,9 @@ static int read(int fd, void *buffer, unsigned length)
         }
     }
 
-
     lock_release(&locker);
+
+    //printf("actually read: %d \n", retVal);
 
     return retVal;
 
@@ -488,19 +482,22 @@ void init_fd_table(struct fd_table* table)
 
 int add_file(struct fd_table *table, struct file* file_ptr)
 {
+    //printf("calling add_file\n");
     int size = table->size;
     struct file_element file_el;
-    struct thread * thr = thread_current();
+    struct thread * curr = thread_current();
 
     /* Allocate fd and set datas */
     fd_gl++;
     file_el.fd = fd_gl;
     file_el.file_ptr = file_ptr;
-    file_el.owner = thr->tid;
+    file_el.owner = curr->tid;
 
     /* Add to table */
     table->files[size] = file_el;
     table->size++;
+
+    //printf("table size: %d \n", table->size);
 
     return file_el.fd;
 }
@@ -509,6 +506,8 @@ struct file* get_file(struct fd_table * table, int fd)
 {
     int i = 0;
     int size = table->size;
+
+    //printf("table size: %d \n", size);
 
     for (i = 0; i < size; ++i)
     {

@@ -23,15 +23,15 @@ Executing 'write-normal':
 (write-normal) begin
 (write-normal) create "test.txt"
 (write-normal) open "test.txt"
-(write-normal) write() returned 0 instead of 373: FAILED
-write-normal: exit(1)
+(write-normal) end
+write-normal: exit(0)
 Execution of 'write-normal' complete.
-Timer: 73 ticks
-Thread: 34 idle ticks, 32 kernel ticks, 8 user ticks
+Timer: 88 ticks
+Thread: 32 idle ticks, 49 kernel ticks, 7 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 148 reads, 276 writes
+hd0:1: 142 reads, 260 writes
 hd1:0: 104 reads, 0 writes
-Console: 1028 characters output
+Console: 990 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

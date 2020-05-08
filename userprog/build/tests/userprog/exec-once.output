@@ -22,18 +22,19 @@ Putting 'child-simple' into the file system...
 Executing 'exec-once':
 (exec-once) begin
 (exec-once) I'm your father
-(exec-once) end
 (child-simple) run
 child-simple: exit(81)
-Kernel PANIC at ../../threads/synch.c:265 in lock_release(): assertion `lock_held_by_current_thread (lock)' failed.
-Call stack: 0x800421894c 0x800420ae40 0x800421dfc9 0x800421da1e 0x800421d771 0x4002e6 0x40035a 0x400196 0x400c1c.
-The `backtrace' program can make call stacks useful.
-Read "Backtraces" in the "Debugging Tools" chapter
-of the Pintos documentation for more information.
-Timer: 291 ticks
-Thread: 35 idle ticks, 252 kernel ticks, 4 user ticks
+(exec-once) end
+exec-once: exit(0)
+Kernel PANIC at ../../threads/palloc.c:314 in palloc_free_multiple(): executed an unreachable statement
+Call stack: 0x800421894c 0x800420c013 0x800420c109 0x800420d400 0x800420d483 0x800420d506 0x800420d5cf 0x800421c474 0x800421c410 0x800420717f 0x800421db96 0x800421d8e1 0x800421d794exec-once: exit(-1)
+Execution of 'exec-once' complete.
+Timer: 98 ticks
+Thread: 36 idle ticks, 57 kernel ticks, 5 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 157 reads, 434 writes
 hd1:0: 198 reads, 0 writes
-Console: 1308 characters output
-Key
+Console: 1280 characters output
+Keyboard: 0 keys pressed
+Exception: 0 page faults
+Powering off...

@@ -1,15 +1,18 @@
 FAIL
-Kernel panic in run: PANIC at ../../threads/thread.c:307 in thread_current(): assertion `is_thread (t)' failed.
-Call stack: 0x800421894c 0x80042070b8 0x8004206bce 0x8004212754 0x80042096a7 0x8004209ac5 0x800421c51f 0x800421cd28 0x800421c2b2 0x800421bfef 0x800420756a
-Translation of call stack:
-0x000000800421894c: debug_panic (lib/kernel/debug.c:32)
-0x00000080042070b8: thread_current (threads/thread.c:308)
-0x0000008004206bce: thread_tick (threads/thread.c:167)
-0x0000008004212754: timer_interrupt (devices/timer.c:132)
-0x00000080042096a7: intr_handler (threads/interrupt.c:352)
-0x0000008004209ac5: intr_entry (threads/intr-stubs.o:?)
-0x000000800421c51f: setup_arguments (userprog/process.c:431)
-0x000000800421cd28: load (userprog/process.c:664)
-0x000000800421c2b2: process_exec (userprog/process.c:203)
-0x000000800421bfef: initd (userprog/process.c:89)
-0x000000800420756a: kernel_thread (threads/thread.c:466)
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (fork-once) begin
+  (fork-once) child run
+  child: exit(81)
+  (fork-once) Parent: child exit status is 81
+  (fork-once) end
+  fork-once: exit(0)
+Differences in `diff -u' format:
+  (fork-once) begin
+- (fork-once) child run
+- child: exit(81)
+- (fork-once) Parent: child exit status is 81
++ (fork-once) Parent: child exit status is -1
+  (fork-once) end
+  fork-once: exit(0)
