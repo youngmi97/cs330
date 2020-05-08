@@ -96,8 +96,11 @@ initd (void *f_name) {
 tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
+	struct thread * curr = thread_current();
+	curr->passed_frame = if_;
+	
 	return thread_create (name,
-			PRI_DEFAULT, __do_fork, thread_current ());
+			PRI_DEFAULT, __do_fork, thread_current());
 }
 
 #ifndef VM
@@ -111,7 +114,14 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	void *newpage;
 	bool writable;
 
+	//printf("[duplicate_pte] va input value: %llx \n", va);
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
+	if (is_kernel_vaddr(va))
+	{
+		//printf("[duplicate_pte] is_kernel_vaddr \n");
+		return true;
+	}
+
 
 	/* 2. Resolve VA from the parent's page map level 4. */
 	parent_page = pml4_get_page (parent->pml4, va);
@@ -119,14 +129,33 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	/* 3. TODO: Allocate new PAL_USER page for the child and set result to
 	 *    TODO: NEWPAGE. */
 
+	//shallow copy --> internal pointers point to the same place
+	newpage = palloc_get_page (PAL_USER);
+	//no pages available
+	if(newpage == NULL)
+	{
+		//printf("[duplicate_pte] newpage is NULL \n");
+		return true;
+	}
+	
+	
 	/* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
 	 *    TODO: according to the result). */
+	
+
+	//phdr.p_flags & PF_W
+	//printf("[duplicate_pte] duplicating to newpage\n");
+	memcpy(newpage, parent_page, PGSIZE);
+	writable = is_writable(pte);
+
+
 
 	/* 5. Add new page to child's page table at address VA with WRITABLE
 	 *    permission. */
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
 		/* 6. TODO: if fail to insert page, do error handling. */
+		printf("[duplicate_pte] do error handling \n");
 	}
 	return true;
 }
@@ -143,10 +172,14 @@ __do_fork (void *aux) {
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
 	struct intr_frame *parent_if;
+	
+	parent_if = parent->passed_frame;
+
 	bool succ = true;
 
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
+	
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
@@ -160,7 +193,10 @@ __do_fork (void *aux) {
 		goto error;
 #else
 	if (!pml4_for_each (parent->pml4, duplicate_pte, parent))
+	{
+		//printf("[__do_fork] pml4_for_each result is null\n");
 		goto error;
+	}
 #endif
 
 	/* TODO: Your code goes here.
@@ -169,11 +205,19 @@ __do_fork (void *aux) {
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
 
+
+
+
+
+
 	process_init ();
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
+	{
+		//printf("[__do_fork] switch to child process \n");
 		do_iret (&if_);
+	}
 error:
 	thread_exit ();
 }
@@ -235,7 +279,7 @@ process_wait (tid_t child_tid UNUSED) {
     int i = 0;
     bool is_child = false;
 
-    t = get_thread(child_tid);
+    t = find_thread(child_tid);
 
         
     for (i = 0; i < cur->childSize; ++i)
@@ -376,87 +420,10 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * and its initial stack pointer into *RSP.
  * Returns true if successful, false otherwise. */
 
-
-
-
-
-
-
-/*
- * Writes given arg to stack using given stack pointer
- */
-static bool write_arg_to_stack(uintptr_t *rsp, struct list *arg_list);
-
-/*
- * Writes 4byte adress to stack
- */
-static bool write_add_to_stack(struct intr_frame *if_, uintptr_t *rsp, struct list *arg_list);
-
-/*
- * Initializes list and Creates list of arguments
- */
-static bool create_arg_list(struct list *arg_list,
-                            struct argument args[],
-                            const char * file_name,
-                            char **token_ptr);
-
-
-/*
- * Adjust stack pointer so that stack pointer becames divisible by 4.
- */
-static bool word_alignment(uintptr_t *rsp);
-
-/*
- * Writes fake return address(which is 0) to stack.
- */
-static bool write_ret_add_to_stack(struct intr_frame *if_, uintptr_t *rsp);
-
-
-
-static bool setup_arguments( uintptr_t *rsp, struct intr_frame *if_, char **token_ptr, const char * file_name)
-{
-	//printf("rsp in setup args: %x \n", if_->rsp);
-    struct list arg_list;
-    struct argument args[MAX_ARG];
-
-	//printf("[setup_arguments] filename: %s \n", file_name);
-
-    /* Initialize and create arg list using token_ptr and file_name */
-    create_arg_list(&arg_list, args, file_name, token_ptr);
-
-    /* Begin processing arguments from end of the list, stack style */
-    write_arg_to_stack(rsp, &arg_list);
-
-    /* Adjust word alignment */
-    word_alignment(rsp);
-
-    //printf("WORD ALIGNED! SP: %p\n", *rsp);
-
-    /* Write arg address to stack */
-    write_add_to_stack(if_, rsp, &arg_list);
-
-    //printf("ADDRESSES LOADED ! SP: %p\n", *rsp);
-
-    /* Point %rdi to argc */
-    int argc = list_size(&arg_list);
-	if_->R.rdi = argc;
-
-    //printf("ARGC LOADED!\n");
-
-    /* Write return adress which is 0 to stack */
-    write_ret_add_to_stack(if_, rsp);
-
-    //printf("RETURN ADD LOADED! SP: %p\n", *rsp);
-    //hex_dump((int)(*rsp),*rsp,100,true);
-
-    return true;
-}
-
-static bool write_ret_add_to_stack(struct intr_frame *if_, uintptr_t *rsp)
+static bool ra_to_stack(struct intr_frame *if_, uintptr_t *rsp)
 {
     *rsp -= sizeof (uintptr_t *);
     memset(*rsp, 0, sizeof (uintptr_t *));
-    //printf("w_add--> sp:%p written:%d\n", *rsp, *(int*) *rsp);
 	if_->rsp = *rsp;
     return true;
 }
@@ -481,27 +448,24 @@ static bool create_arg_list(struct list *arg_list,
 {
     char *token = NULL;
     int i = 0;
-    /* Initialize list as empty list */
     list_init(arg_list);
 
     i = 0;
     for (token = (char*) file_name;
          token != NULL;
          token = strtok_r(NULL, " ", token_ptr))
-    {/* Add each argument to argument list which will be used as stack */
+    {
 
         args[i].arg = token;
         args[i].len = strnlen(token, ARGLEN);
         list_push_back(arg_list, &args[i].elem);
         ++i;
-
-        //printf("-->%s\n", token);
     }
 
     return true;
 }
 
-static bool write_arg_to_stack(uintptr_t *rsp, struct list *arg_list)
+static bool arg_to_stack(uintptr_t *rsp, struct list *arg_list)
 {
     struct list_elem *arg_elem = NULL;
     struct argument *curr_arg = NULL;
@@ -511,35 +475,30 @@ static bool write_arg_to_stack(uintptr_t *rsp, struct list *arg_list)
          arg_elem = list_prev(arg_elem))
     {
         curr_arg = list_entry(arg_elem, struct argument, elem);
-        //printf("w_arg--> %p , %s", *rsp, curr_arg->arg);
-        *rsp -= curr_arg->len + 1; /* Create room for argument in stack */
-        curr_arg->rsp = *rsp; /* Save address of string */
-        memcpy(*rsp, curr_arg->arg, curr_arg->len + 1); /* Copy argument to stack */
-        //printf("__w_arg--> %p %p , %s\n", *rsp, curr_arg->rsp, curr_arg->arg);
+        *rsp -= curr_arg->len + 1;
+        curr_arg->rsp = *rsp;
+        memcpy(*rsp, curr_arg->arg, curr_arg->len + 1);
     }
 
     return true;
 }
 
 
-static bool write_add_to_stack(struct intr_frame *if_, uintptr_t *rsp, struct list *arg_list)
+static bool arg_addr_to_stack(struct intr_frame *if_, uintptr_t *rsp, struct list *arg_list)
 {
     struct list_elem *arg_elem = NULL;
     struct argument *curr_arg = NULL;
 
-    /* Write NULL to stack,means end of the arg list */
     *rsp -= sizeof (char *);
     memset(*rsp, 0, sizeof (char *));
-    //printf("w_add--> sp:%p [NULL]\n", *rsp);
 
     for (arg_elem = list_rbegin(arg_list);
          arg_elem != list_rend(arg_list);
          arg_elem = list_prev(arg_elem))
     {
         curr_arg = list_entry(arg_elem, struct argument, elem);
-        *rsp -= sizeof (char*); /* Allocate space for pointer */
-        memcpy(*rsp, &curr_arg->rsp, sizeof (char*)) /* Write ptr to stack */;
-        //printf("w_add--> sp:%p written:%p ,arg: %s\n", *rsp, curr_arg->rsp, curr_arg->arg);
+        *rsp -= sizeof (char*);
+        memcpy(*rsp, &curr_arg->rsp, sizeof (char*));
     }
 
     //point %rsi to the argv[0] address
@@ -551,6 +510,24 @@ static bool write_add_to_stack(struct intr_frame *if_, uintptr_t *rsp, struct li
 
 
 
+static bool setup_arg( uintptr_t *rsp, struct intr_frame *if_, char **token_ptr, const char * file_name)
+{
+    struct list arg_list;
+    struct argument args[MAX_ARG];
+
+
+    create_arg_list(&arg_list, args, file_name, token_ptr);
+    arg_to_stack(rsp, &arg_list);
+    word_alignment(rsp);
+
+    arg_addr_to_stack(if_, rsp, &arg_list);
+    int argc = list_size(&arg_list);
+	if_->R.rdi = argc;
+    ra_to_stack(if_, rsp);
+    //hex_dump((int)(*rsp),*rsp,100,true);
+
+    return true;
+}
 
 
 
@@ -661,7 +638,12 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 
 	//[project 2] Setting up the argument stack here
 
-	success = setup_arguments(&if_->rsp, if_, token_ptr, file_name);
+
+	enum intr_level old_level = intr_disable();
+	success = setup_arg(&if_->rsp, if_, token_ptr, file_name);
+	intr_set_level(old_level);
+
+
     if (!success)
     {
         printf("load: error in setup_arguments \n");

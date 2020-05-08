@@ -515,7 +515,7 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 
 //[project 2]
-struct thread* get_thread(tid_t tid)
+struct thread* find_thread(tid_t tid)
 {
     struct list_elem *e;
     

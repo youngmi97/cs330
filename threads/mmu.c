@@ -107,6 +107,8 @@ pt_for_each (uint64_t *pt, pte_for_each_func *func, void *aux,
 								 ((uint64_t) pdp_index << PDPESHIFT) |
 								 ((uint64_t) pdx_index << PDXSHIFT) |
 								 ((uint64_t) i << PTXSHIFT));
+
+			//printf("[pt_for_each] va value: %llx \n", va);
 			if (!func (pte, va, aux))
 				return false;
 		}

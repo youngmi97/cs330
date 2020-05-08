@@ -115,6 +115,7 @@ struct thread {
     int childSize;
     volatile bool is_exit;
 	int return_value;
+	struct intr_frame *passed_frame; 
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
 	struct supplemental_page_table spt;
@@ -175,7 +176,7 @@ void thread_increment_recent_cpu(void);
 void thread_reperioritize_mlfqs(void);
 
 //[project 2]
-struct thread* get_thread(tid_t tid);
+struct thread* find_thread(tid_t tid);
 
 enum cmp_policy {
 	less = false,

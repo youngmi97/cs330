@@ -23,11 +23,6 @@
 #include "devices/input.h"
 #include "intrinsic.h"
 
-
-static struct lock locker;
-static int fd_gl = 3;
-static struct fd_table fd_list;
-
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
@@ -46,9 +41,13 @@ void syscall_handler (struct intr_frame *);
 
 
 /* Read and write data from/to user space */
-static int64_t get_user(const uint8_t *uaddr);
+//static int64_t get_user(const uint8_t *uaddr);
 //static bool put_user (uint8_t *udst, uint8_t byte);
 
+
+static struct lock locker;
+static int fd_gl = 3;
+static struct file_descriptors fd_list;
 
 /* Local functions */
 static void halt(void) NO_RETURN;
@@ -73,7 +72,7 @@ syscall_init (void) {
 	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
 
     lock_init(&locker);
-    init_fd_table(&fd_list);
+    fd_list.size = 0;
 
     
 
@@ -89,14 +88,13 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-    //lock_init(&locker);
-    //init_fd_table(&fd_list);
 
 	//printf ("[syscall_handler] system call!\n");
     
 	int system_call_number = f->R.rax;
 
 	//printf ("[syscall_handler] system_call_number: %d\n", system_call_number);
+    //printf ("[syscall_handler] first argument: %s\n", (const char *)f->R.rdi);
 
 	switch (system_call_number)
     {/* Select proper system call */
@@ -113,6 +111,8 @@ syscall_handler (struct intr_frame *f UNUSED) {
         
         case SYS_FORK:
             //printf ("[syscall_handler] called SYS_FORK\n");
+            //thread name passed
+            f->R.rax = process_fork((const char *)f->R.rdi, f);
             break;
 
         case SYS_EXEC:
@@ -180,17 +180,6 @@ syscall_handler (struct intr_frame *f UNUSED) {
 }
 
 
-
-/* Writes BYTE to user address UDST.
- * UDST must be below KERN_BASE.
- * Returns true if successful, false if a segfault occurred. */
-/* static bool
-put_user (uint8_t *udst, uint8_t byte) {
-    int error_code;
-    asm ("movl $1f, %0; movb %b2, %1; 1:"
-    : "=&a" (error_code), "=m" (*udst) : "q" (byte));
-    return error_code != -1;
-} */
 
 /*
  * SYSCALL HANDLING FUNCTIONS
@@ -282,8 +271,6 @@ static void close(int fd)
 
     file_ptr = get_file(&fd_list, fd);
 
-    //printf("\nClose, fd:%d , in list %p, owner:%d , lsize:%d\n", fd, file_ptr, get_file_owner(&fd_list, fd), fd_list.size);
-
     if (file_ptr != NULL)
     {
         file_close(file_ptr);
@@ -303,7 +290,7 @@ static int read(int fd, void *buffer, unsigned length)
 
     lock_acquire(&locker);
 
-    if (fd == STDIN_FILENO/*SDTIN_FILENO*/)
+    if (fd == STDIN_FILENO)
     {
         for (counterForLoop = 0;
              counterForLoop != length;
@@ -330,15 +317,13 @@ static int read(int fd, void *buffer, unsigned length)
             file_ptr = get_file(&fd_list, fd);
 
             if (file_ptr != NULL)
-            {/* If file is valid and pointers are in user space(means valid ptr) */
+            {
                 retVal = file_read(file_ptr, buffer, length);
             }
             else
             {
                 retVal = -1;
             }
-
-            //printf("\nRead, fd:%d , in list : %p , ret:%d, lsize:%d\n", fd, file_ptr, retVal, fd_list.size);
         }
     }
 
@@ -367,7 +352,7 @@ static int write(int fd, const void *buffer, unsigned size)
         retVal = -1;
     }
     else
-    {// If the process has open file,and want to write it.
+    {
 
         if (!is_user_vaddr(buffer + size))
         {
@@ -379,15 +364,13 @@ static int write(int fd, const void *buffer, unsigned size)
             file_ptr = get_file(&fd_list, fd);
 
             if (file_ptr != NULL)
-            {/* If file is valid and pointers are in user space(means valid ptr) */
+            {
                 retVal = file_write(file_ptr, buffer, size);
             }
             else
-            {// Error 
+            {
                 retVal = 0;
             }
-
-           // printf("\nWrite, fd:%d , in list :%p , ret:%d , owner:%d ,lsize:%d\n", fd, file_ptr, retVal, thread_current()->tid, fd_list.size);
 
         }
 
@@ -468,23 +451,13 @@ static unsigned tell(int fd)
 
 
 
+//[Project 2] FILE HANDLING
 
-
-
-
-
-
-
-void init_fd_table(struct fd_table* table)
-{
-    table->size = 0;
-}
-
-int add_file(struct fd_table *table, struct file* file_ptr)
+int add_file(struct file_descriptors *table, struct file* file_ptr)
 {
     //printf("calling add_file\n");
     int size = table->size;
-    struct file_element file_el;
+    struct file_elem file_el;
     struct thread * curr = thread_current();
 
     /* Allocate fd and set datas */
@@ -502,7 +475,7 @@ int add_file(struct fd_table *table, struct file* file_ptr)
     return file_el.fd;
 }
 
-struct file* get_file(struct fd_table * table, int fd)
+struct file* get_file(struct file_descriptors * table, int fd)
 {
     int i = 0;
     int size = table->size;
@@ -519,7 +492,7 @@ struct file* get_file(struct fd_table * table, int fd)
     return NULL;
 }
 
-pid_t get_file_owner(struct fd_table * table, int fd)
+pid_t get_file_owner(struct file_descriptors * table, int fd)
 {
     int i = 0;
     int size = table->size;
@@ -534,7 +507,7 @@ pid_t get_file_owner(struct fd_table * table, int fd)
     return -1;
 }
 
-struct file* remove_file(struct fd_table * table, int fd)
+struct file* remove_file(struct file_descriptors * table, int fd)
 {
     int i = 0;
     int j = 0;
@@ -544,7 +517,7 @@ struct file* remove_file(struct fd_table * table, int fd)
     for (i = 0; i < size; ++i)
     {
         if (table->files[i].fd == fd)
-        {/* If found, shift elements and return file * */
+        {
             file_ptr = table->files[i].file_ptr;
             for (j = i; j < size - 1; ++j)
             {
