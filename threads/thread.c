@@ -334,10 +334,12 @@ thread_exit (void) {
 
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
-	intr_disable ();
+	//intr_disable ();
 	
+	sema_down(&thread_current()->sema_remove);
 	thread_current()->is_exit=true;
   	list_remove (&thread_current()->allelem);
+	intr_disable();
 	// [project 1] remove from mlfqs list
 	if(thread_mlfqs) {
 		list_remove(&thread_current()->mlfqs_elem);
@@ -503,8 +505,6 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
 
-
-
 	// [project 1]
 	list_init(&t->aquired_locks);
 	t->original_priority = priority;
@@ -516,6 +516,11 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 	//[project 2]
 	list_push_back (&all_list, &t->allelem);
+	//printf("list_push_back what:%d, from where%s\n",t->tid, t->name );
+
+	sema_init(&t->sema_remove,0);
+
+
 }
 
 
@@ -530,9 +535,14 @@ struct thread* find_thread(tid_t tid)
          e = list_next (e))
     {
       struct thread *t = list_entry (e, struct thread, allelem);
-      if( t != NULL && t->tid == tid){
+     /* if( t != NULL && t->tid == tid){
           return t;
-      }
+      }*/
+	if(t!=NULL){
+		//pprintf("value of t->tid: %d, value of tid that we should find: %d, thread_name: %s\n", t->tid, tid, t->name);
+		if(t->tid==tid){
+			return t;
+		}}
     }    
     
     return NULL;

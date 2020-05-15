@@ -1,1 +1,26 @@
-PASS
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (args) begin
+  (args) argc = 3
+  (args) argv[0] = 'args-dbl-space'
+  (args) argv[1] = 'two'
+  (args) argv[2] = 'spaces!'
+  (args) argv[3] = null
+  (args) end
+  args-dbl-space: exit(0)
+Differences in `diff -u' format:
++ list_push_back what:0, from where: args-dbl-space
+  (args) begin
+  (args) argc = 3
+  (args) argv[0] = 'args-dbl-space'
+  (args) argv[1] = 'two'
+  (args) argv[2] = 'spaces!'
+  (args) argv[3] = null
+  (args) end
+  args-dbl-space: exit(0)
++ [process_wait] current tid: 1 
++ [process_wait] child_tid tid: 3 
++ value of t->tid: 1, value of tid that we should find: 3, thread_name: main
++ value of t->tid: 2, value of tid that we should find: 3, thread_name: idle

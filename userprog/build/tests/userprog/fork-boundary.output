@@ -1,0 +1,48 @@
+Kernel command line: -q -f put fork-boundary run fork-boundary
+0 ~ 9fc00 1
+100000 ~ ffe0000 1
+Pintos booting with: 
+	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
+	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
+Calibrating timer...  183,296,000 loops/s.
+hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
+hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
+hd1:0: detected 103 sector (51 kB) disk, model "QEMU HARDDISK", serial "QM00003"
+Formatting file system...done.
+Boot complete.
+Putting 'fork-boundary' into the file system...
+Executing 'fork-boundary':
+(fork-boundary) begin
+[process_wait] current tid: 1 
+[process_wait] child_tid tid: 3 
+t is not null
+t is not null
+t is not null
+here
+[process_wait] current tid: 4 
+[process_wait] child_tid tid: 2 
+t is not null
+t is not null
+(fork-boundary) fork
+(fork-boundary) wait
+(fork-boundary) wait: FAILED
+child-simple: exit(1)
+[process_wait] current tid: 3 
+[process_wait] child_tid tid: 4 
+t is not null
+t is not null
+t is not null
+(fork-boundary) fork
+(fork-boundary) wait
+(fork-boundary) wait: FAILED
+fork-boundary: exit(1)
+Execution of 'fork-boundary' complete.
+Timer: 81 ticks
+Thread: 30 idle ticks, 49 kernel ticks, 2 user ticks
+hd0:0: 0 reads, 0 writes
+hd0:1: 80 reads, 234 writes
+hd1:0: 103 reads, 0 writes
+Console: 1326 characters output
+Keyboard: 0 keys pressed
+Exception: 0 page faults
+Powering off...

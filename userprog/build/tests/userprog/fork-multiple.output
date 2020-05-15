@@ -1,17 +1,12 @@
-c[?7l[2J[0mSeaBIOS (version rel-1.11.0-0-g63451fca13-prebuilt.qemu-project.org)
-
-
-iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+0FF915A0+0FEF15A0 C980
-Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
-
-
-Booting from Hard Disk..Kernel command line: -q -f put fork-multiple run fork-multiple
+Kernel command line: -q -f put fork-multiple run fork-multiple
+list_push_back what:0, from where: main
 0 ~ 9fc00 1
 100000 ~ ffe0000 1
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
-Calibrating timer...  104,755,200 loops/s.
+list_push_back what:0, from where: idle
+Calibrating timer...  209,510,400 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 101 sector (50 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -19,76 +14,264 @@ Formatting file system...done.
 Boot complete.
 Putting 'fork-multiple' into the file system...
 Executing 'fork-multiple':
+list_push_back what:0, from where: fork-multiple
 (fork-multiple) begin
+list_push_back what:0, from where: child
+[process_wait] current tid: 1 
+[process_wait] child_tid tid: 3 
+value of t->tid: 1, value of tid that we should find: 3, thread_name: main
+value of t->tid: 2, value of tid that we should find: 3, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 3, thread_name: fork-multiple
+here
+[process_wait] current tid: 4 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
 (fork-multiple) Parent: child exit status is -1
+list_push_back what:0, from where: child
+[process_wait] current tid: 3 
+[process_wait] child_tid tid: 4 
+value of t->tid: 1, value of tid that we should find: 4, thread_name: main
+value of t->tid: 2, value of tid that we should find: 4, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 4, thread_name: fork-multiple
+value of t->tid: 4, value of tid that we should find: 4, thread_name: child
+here
+[process_wait] current tid: 5 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
 (fork-multiple) Parent: child exit status is -1
+list_push_back what:0, from where: child
+[process_wait] current tid: 4 
+[process_wait] child_tid tid: 5 
+value of t->tid: 1, value of tid that we should find: 5, thread_name: main
+value of t->tid: 2, value of tid that we should find: 5, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 5, thread_name: fork-multiple
+value of t->tid: 4, value of tid that we should find: 5, thread_name: child
+value of t->tid: 5, value of tid that we should find: 5, thread_name: child
+here
+[process_wait] current tid: 6 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
 (fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
-(fork-multiple) Parent: child exit status is -1
-(fork-multiple) end
-child: exit(0)
+list_push_back what:0, from where: child
+[process_wait] current tid: 5 
+[process_wait] child_tid tid: 6 
+value of t->tid: 1, value of tid that we should find: 6, thread_name: main
+value of t->tid: 2, value of tid that we should find: 6, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 6, thread_name: fork-multiple
+value of t->tid: 4, value of tid that we should find: 6, thread_name: child
+value of t->tid: 5, value of tid that we should find: 6, thread_name: child
+value of t->tid: 6, value of tid that we should find: 6, thread_name: child
+here
+[process_wait] current tid: 7 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
 (fork-multiple) Parent: child exit status is -1
 (fork-multiple) end
 child: exit(0)
+[process_wait] current tid: 6 
+[process_wait] child_tid tid: 7 
+value of t->tid: 1, value of tid that we should find: 7, thread_name: main
+value of t->tid: 2, value of tid that we should find: 7, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 7, thread_name: fork-multiple
+value of t->tid: 4, value of tid that we should find: 7, thread_name: child
+value of t->tid: 5, value of tid that we should find: 7, thread_name: child
+value of t->tid: 6, value of tid that we should find: 7, thread_name: child
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+(fork-multiple) Parent: child exit status is 0
+list_push_back what:0, from where: child
+[process_wait] current tid: 8 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+[process_wait] current tid: 5 
+[process_wait] child_tid tid: 8 
+value of t->tid: 1, value of tid that we should find: 8, thread_name: main
+value of t->tid: 2, value of tid that we should find: 8, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 8, thread_name: fork-multiple
+value of t->tid: 4, value of tid that we should find: 8, thread_name: child
+value of t->tid: 5, value of tid that we should find: 8, thread_name: child
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+(fork-multiple) Parent: child exit status is 0
+list_push_back what:0, from where: child
+[process_wait] current tid: 9 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+list_push_back what:0, from where: child
+[process_wait] current tid: 4 
+[process_wait] child_tid tid: 9 
+value of t->tid: 1, value of tid that we should find: 9, thread_name: main
+value of t->tid: 2, value of tid that we should find: 9, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 9, thread_name: fork-multiple
+value of t->tid: 4, value of tid that we should find: 9, thread_name: child
+value of t->tid: 9, value of tid that we should find: 9, thread_name: child
+here
+[process_wait] current tid: 10 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+[process_wait] current tid: 9 
+[process_wait] child_tid tid: 10 
+value of t->tid: 1, value of tid that we should find: 10, thread_name: main
+value of t->tid: 2, value of tid that we should find: 10, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 10, thread_name: fork-multiple
+value of t->tid: 4, value of tid that we should find: 10, thread_name: child
+value of t->tid: 9, value of tid that we should find: 10, thread_name: child
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+(fork-multiple) Parent: child exit status is 0
+list_push_back what:0, from where: child
+[process_wait] current tid: 11 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+[process_wait] current tid: 4 
+[process_wait] child_tid tid: 11 
+value of t->tid: 1, value of tid that we should find: 11, thread_name: main
+value of t->tid: 2, value of tid that we should find: 11, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 11, thread_name: fork-multiple
+value of t->tid: 4, value of tid that we should find: 11, thread_name: child
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+(fork-multiple) Parent: child exit status is 0
+list_push_back what:0, from where: child
+[process_wait] current tid: 12 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+list_push_back what:0, from where: child
+[process_wait] current tid: 3 
+[process_wait] child_tid tid: 12 
+value of t->tid: 1, value of tid that we should find: 12, thread_name: main
+value of t->tid: 2, value of tid that we should find: 12, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 12, thread_name: fork-multiple
+value of t->tid: 12, value of tid that we should find: 12, thread_name: child
+here
+[process_wait] current tid: 13 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+list_push_back what:0, from where: child
+[process_wait] current tid: 12 
+[process_wait] child_tid tid: 13 
+value of t->tid: 1, value of tid that we should find: 13, thread_name: main
+value of t->tid: 2, value of tid that we should find: 13, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 13, thread_name: fork-multiple
+value of t->tid: 12, value of tid that we should find: 13, thread_name: child
+value of t->tid: 13, value of tid that we should find: 13, thread_name: child
+here
+[process_wait] current tid: 14 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+[process_wait] current tid: 13 
+[process_wait] child_tid tid: 14 
+value of t->tid: 1, value of tid that we should find: 14, thread_name: main
+value of t->tid: 2, value of tid that we should find: 14, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 14, thread_name: fork-multiple
+value of t->tid: 12, value of tid that we should find: 14, thread_name: child
+value of t->tid: 13, value of tid that we should find: 14, thread_name: child
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+(fork-multiple) Parent: child exit status is 0
+list_push_back what:0, from where: child
+[process_wait] current tid: 15 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+[process_wait] current tid: 12 
+[process_wait] child_tid tid: 15 
+value of t->tid: 1, value of tid that we should find: 15, thread_name: main
+value of t->tid: 2, value of tid that we should find: 15, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 15, thread_name: fork-multiple
+value of t->tid: 12, value of tid that we should find: 15, thread_name: child
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+(fork-multiple) Parent: child exit status is 0
+list_push_back what:0, from where: child
+[process_wait] current tid: 16 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+list_push_back what:0, from where: child
+[process_wait] current tid: 3 
+[process_wait] child_tid tid: 16 
+value of t->tid: 1, value of tid that we should find: 16, thread_name: main
+value of t->tid: 2, value of tid that we should find: 16, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 16, thread_name: fork-multiple
+value of t->tid: 16, value of tid that we should find: 16, thread_name: child
+here
+[process_wait] current tid: 17 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+[process_wait] current tid: 16 
+[process_wait] child_tid tid: 17 
+value of t->tid: 1, value of tid that we should find: 17, thread_name: main
+value of t->tid: 2, value of tid that we should find: 17, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 17, thread_name: fork-multiple
+value of t->tid: 16, value of tid that we should find: 17, thread_name: child
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+(fork-multiple) Parent: child exit status is 0
+list_push_back what:0, from where: child
+[process_wait] current tid: 18 
+[process_wait] child_tid tid: 2 
+value of t->tid: 1, value of tid that we should find: 2, thread_name: main
+value of t->tid: 2, value of tid that we should find: 2, thread_name: idle
+(fork-multiple) Parent: child exit status is -1
+(fork-multiple) end
+child: exit(0)
+[process_wait] current tid: 3 
+[process_wait] child_tid tid: 18 
+value of t->tid: 1, value of tid that we should find: 18, thread_name: main
+value of t->tid: 2, value of tid that we should find: 18, thread_name: idle
+value of t->tid: 3, value of tid that we should find: 18, thread_name: fork-multiple
 (fork-multiple) Parent: child exit status is -1
 (fork-multiple) end
 fork-multiple: exit(0)
 Execution of 'fork-multiple' complete.
-Timer: 145 ticks
-Thread: 31 idle ticks, 62 kernel ticks, 52 user ticks
+Timer: 243 ticks
+Thread: 30 idle ticks, 113 kernel ticks, 100 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 85 reads, 230 writes
 hd1:0: 101 reads, 0 writes
-Console: 2840 characters output
+Console: 13489 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

@@ -315,8 +315,8 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 	struct thread *t = NULL, *cur = thread_current();
-	printf("[process_wait] current tid: %d \n", cur->tid);
-	printf("[process_wait] child_tid tid: %d \n", child_tid);
+	//printf("[process_wait] current tid: %d \n", cur->tid);
+	//printf("[process_wait] child_tid tid: %d \n", child_tid);
 
     int i = 0;
     bool is_child = false;
@@ -335,7 +335,8 @@ process_wait (tid_t child_tid UNUSED) {
     
     if (is_child && t != NULL && t->status != THREAD_DYING && t->tid != -1)
     {
-		printf("here\n");
+		//printf("here\n");
+		sema_up(&t->sema_remove);
 		// Infinite loop until child exits
 		while (t->is_exit == false);
 		//if (t->is_exit == false)
@@ -358,7 +359,7 @@ process_exit (void) {
 	//printf("[process_exit] called \n");
 	//printf("%s: exit(%d)\n", thread_current()->name, thread_current()->status);
     //thread_current()->return_value = thread_current()->status;
-	//("[process_exit] thread: %d \n", thread_current()->tid);
+//	printf("[process_exit] thread: %d, %s \n", thread_current()->tid, thread_current()->name);
 	 
 
 	process_cleanup ();
