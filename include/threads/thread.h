@@ -7,6 +7,7 @@
 #include "threads/interrupt.h"
 
 #include "threads/fixed-point.h" // [project 1]
+#include "threads/synch.h"
 
 #ifdef VM
 #include "vm/vm.h"
@@ -116,6 +117,9 @@ struct thread {
     volatile bool is_exit;
 	int return_value;
 	struct intr_frame *passed_frame; 
+	struct semaphore sema_initialization;
+	struct file_descriptors *file_table;
+	struct file *executable;
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
 	struct supplemental_page_table spt;

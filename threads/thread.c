@@ -210,6 +210,7 @@ thread_create (const char *name, int priority,
 	struct thread *t;
 	tid_t tid;
 
+
 	ASSERT (function != NULL);
 
 	/* Allocate thread. */

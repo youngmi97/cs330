@@ -51,6 +51,7 @@ static struct file_descriptors fd_list;
 
 /* Local functions */
 static void halt(void) NO_RETURN;
+static pid_t fork(const char * file, struct intr_frame * f);
 static pid_t exec(const char *file);
 static bool create(const char *file, unsigned initial_size);
 static bool remove(const char *file);
@@ -61,6 +62,7 @@ static int write(int fd, const void *buffer, unsigned length);
 static void seek(int fd, unsigned position);
 static unsigned tell(int fd);
 static void close(int fd);
+
 
 void
 syscall_init (void) {
@@ -95,6 +97,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
 	//printf ("[syscall_handler] system_call_number: %d\n", system_call_number);
     //printf ("[syscall_handler] first argument: %s\n", (const char *)f->R.rdi);
+    //printf ("[syscall_handler] current thread: %d\n", thread_current() -> tid);
+    //if (system_call_number == 2)
+    //    printf ("[syscall_handler] intr_frame rdi: %s\n", (const char *)f->R.rdi);
 
 	switch (system_call_number)
     {/* Select proper system call */
@@ -105,14 +110,15 @@ syscall_handler (struct intr_frame *f UNUSED) {
             break; /* Halt the operating system. */
 
         case SYS_EXIT:
-            //printf ("[syscall_handler] called SYS_EXIT\n");
+            printf ("[syscall_handler] called SYS_EXIT\n");
+            printf ("[syscall_handler] called from: %d\n", thread_current()->tid);
             exit((int) f->R.rdi);
             break; /* Terminate this process. */
         
         case SYS_FORK:
-            //printf ("[syscall_handler] called SYS_FORK\n");
+            printf ("[syscall_handler] called SYS_FORK\n");
             //thread name passed
-            f->R.rax = process_fork((const char *)f->R.rdi, f);
+            f->R.rax = fork((const char *) f->R.rdi, f);
             break;
 
         case SYS_EXEC:
@@ -122,6 +128,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
         case SYS_WAIT:
             //printf ("[syscall_handler] called SYS_WAIT\n");
+            //printf ("[syscall_handler] wait for: %d \n", f->R.rdi);
             f->R.rax= process_wait((tid_t) f->R.rdi);
             break; /* Wait for a child process to die. */
 
@@ -185,15 +192,44 @@ syscall_handler (struct intr_frame *f UNUSED) {
  * SYSCALL HANDLING FUNCTIONS
  */
 
-static pid_t exec(const char *file)
+static pid_t fork(const char * file, struct intr_frame * f)
+{   
+    pid_t child;
+    struct thread *curr = thread_current();
+    curr->file_table = &fd_list;
+    //printf("[fork] rdi value: %s \n", f->R.rdi);
+
+    //lock_acquire(&locker);
+
+    child = process_fork(file, f);
+
+    printf("[fork] child value returned from fork: %d \n", child);
+
+    if (child) // fork value of 0 for child
+    {
+        //lock_release(&locker);
+        printf("[fork] run child \n");
+        return 0;
+    }
+    
+    else // fork value of child pid for parent
+    {
+        //lock_release(&locker);
+        printf("[fork] run parent \n");
+        return child;
+    }
+}
+
+
+static pid_t exec(const char *cmd_line)
 {
     int retVal = -1;
 
     lock_acquire(&locker);
     
-    if (file != NULL && is_user_vaddr(file))
+    if (cmd_line != NULL)
     {
-        retVal = process_create_initd(file);
+        retVal = process_create_initd(cmd_line);
     }
     lock_release(&locker);
 

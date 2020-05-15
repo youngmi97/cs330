@@ -7,6 +7,7 @@
 #include <string.h>
 #include "userprog/gdt.h"
 #include "userprog/tss.h"
+#include "userprog/syscall.h"
 #include "filesys/directory.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
@@ -94,13 +95,26 @@ initd (void *f_name) {
 /* Clones the current process as `name`. Returns the new process's thread id, or
  * TID_ERROR if the thread cannot be created. */
 tid_t
-process_fork (const char *name, struct intr_frame *if_ UNUSED) {
+process_fork (const char *name, struct intr_frame *if_) {
 	/* Clone current thread to new thread.*/
 	struct thread * curr = thread_current();
 	curr->passed_frame = if_;
+	//printf("[process_fork] tid : %d\n", curr->tid); --> 3
+	//printf("[process_fork] if_ rdi: %s \n", if_->R.rdi);
+	//printf("[process_fork] passed_frame: %s \n", curr->passed_frame->R.rdi);
+
+	sema_init(&curr->sema_initialization, 0);
+
+	//printf("[process_fork] child name: %s \n", name); --> child
 	
-	return thread_create (name,
+	tid_t thread_created = thread_create (name,
 			PRI_DEFAULT, __do_fork, thread_current());
+
+	//printf("[process_fork] thread_created: %d \n", thread_created);
+
+	sema_down(&curr->sema_initialization);
+
+	return thread_created;
 }
 
 #ifndef VM
@@ -118,7 +132,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
 	if (is_kernel_vaddr(va))
 	{
-		//printf("[duplicate_pte] is_kernel_vaddr \n");
+		// Returning false results in failure --> true instead
 		return true;
 	}
 
@@ -175,16 +189,31 @@ __do_fork (void *aux) {
 	
 	parent_if = parent->passed_frame;
 
+
+	// WHY IS RDI CORRUPTED?? --> print string length gives "child: exit(-1)"
+	//printf("[__do_fork] parent_if length of rdi: %d \n", strlen(parent->passed_frame->R.rdi));
+	//printf("[__do_fork] parent_if rdi: %s \n", parent->passed_frame->R.rdi);
+
 	bool succ = true;
+
+	//printf("[__do_fork] called \n");
 
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
+
+	//printf("[__do_fork] parent_if rdi: %s \n", parent_if->R.rdi);
+	
+	printf("[__do_fork] parent id: %d\n", parent->tid);
+	printf("[__do_fork] current id: %d\n", current->tid);
+	//printf("[__do_fork] parent child size: %d\n", parent->childSize);
 	
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
 	if (current->pml4 == NULL)
 		goto error;
+
+	//process_wait(current->tid);
 
 	process_activate (current);
 #ifdef VM
@@ -205,9 +234,30 @@ __do_fork (void *aux) {
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
 
+	//sema_up(&parent->sema_initialization);
+	
+	parent->child_list[parent->childSize] = current->tid;
+    parent->childSize++;
+
+	struct file_descriptors *fd_list = parent->file_table;
+	//printf("[__do_fork] file_descriptors list size: %d \n", fd_list->size);
+	
+	//struct file *file_copy_ptr = file_duplicate()
+	if (parent->executable != NULL)
+		printf("[__do_fork] parent holds executable! \n");
+
+	struct file *file_copy_ptr = file_duplicate(parent->executable);
+	add_file(fd_list, file_copy_ptr);
+
+	current->file_table = fd_list;
+	current->executable = file_copy_ptr;
+	current->childSize = 0;
+	current->is_exit = false;
+	current->return_value = 0;
+	
 
 
-
+	sema_up(&parent->sema_initialization);
 
 
 	process_init ();
@@ -215,10 +265,11 @@ __do_fork (void *aux) {
 	/* Finally, switch to the newly created process. */
 	if (succ)
 	{
-		//printf("[__do_fork] switch to child process \n");
+		printf("[__do_fork] switch to newly created process \n");
 		do_iret (&if_);
 	}
 error:
+	printf("[__do_fork] exiting thread %d \n", thread_current() ->tid);
 	thread_exit ();
 }
 
@@ -229,6 +280,8 @@ process_exec (void *f_name) {
 	char *file_name = f_name;
 	char *token_ptr = NULL;
 	bool success;
+	//struct thread *curr = thread_current();
+	//printf("[process_exec] current thread: %d \n", curr->tid);
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -238,13 +291,14 @@ process_exec (void *f_name) {
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
 
-	//printf("[process_exec]++++++++++++++++++++++++++++++++++++++++++ \n");
 
 	/* We first kill the current context */
 	process_cleanup ();
 	file_name = strtok_r(file_name, " ", &token_ptr);
 	/* And then load the binary */
 	success = load (file_name, &_if, &token_ptr);
+
+	
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -295,6 +349,7 @@ process_wait (tid_t child_tid UNUSED) {
 
 		// Infinite loop until child exits
 		while (t->is_exit == false);
+		//printf("HERE \n");
         return t->return_value;
     }
 
@@ -313,6 +368,7 @@ process_exit (void) {
 	//printf("[process_exit] called \n");
 	//printf("%s: exit(%d)\n", thread_current()->name, thread_current()->status);
     //thread_current()->return_value = thread_current()->status;
+	//("[process_exit] thread: %d \n", thread_current()->tid);
 	 
 
 	process_cleanup ();
@@ -557,6 +613,9 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
 	}
+	
+	//[Project 2] store the executable on the parent thread
+	t->executable = file;
 
 	/* Read and verify executable header. */
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
