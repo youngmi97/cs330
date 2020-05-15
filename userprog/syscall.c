@@ -110,15 +110,16 @@ syscall_handler (struct intr_frame *f UNUSED) {
             break; /* Halt the operating system. */
 
         case SYS_EXIT:
-            printf ("[syscall_handler] called SYS_EXIT\n");
-            printf ("[syscall_handler] called from: %d\n", thread_current()->tid);
+            //printf ("[syscall_handler] called SYS_EXIT\n");
+            //printf ("[syscall_handler] called from: %d\n", thread_current()->tid);
             exit((int) f->R.rdi);
             break; /* Terminate this process. */
         
         case SYS_FORK:
-            printf ("[syscall_handler] called SYS_FORK\n");
+            //printf ("[syscall_handler] called SYS_FORK\n");
             //thread name passed
-            f->R.rax = fork((const char *) f->R.rdi, f);
+            thread_current()->file_table = &fd_list;
+            f->R.rax = process_fork((const char *) f->R.rdi, f);
             break;
 
         case SYS_EXEC:
@@ -128,6 +129,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
         case SYS_WAIT:
             //printf ("[syscall_handler] called SYS_WAIT\n");
+            //printf ("[syscall_handler] called by: %d \n", thread_current()->tid);
             //printf ("[syscall_handler] wait for: %d \n", f->R.rdi);
             f->R.rax= process_wait((tid_t) f->R.rdi);
             break; /* Wait for a child process to die. */
@@ -194,29 +196,24 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
 static pid_t fork(const char * file, struct intr_frame * f)
 {   
-    pid_t child;
+    pid_t child_pid;
     struct thread *curr = thread_current();
     curr->file_table = &fd_list;
-    //printf("[fork] rdi value: %s \n", f->R.rdi);
+    struct thread *t = NULL;
+    bool is_child = false;
+    child_pid = process_fork(file, f);
+    printf("[fork] current thread: %d \n", curr->tid);
 
-    //lock_acquire(&locker);
 
-    child = process_fork(file, f);
+    t = find_thread(child_pid);
 
-    printf("[fork] child value returned from fork: %d \n", child);
-
-    if (child) // fork value of 0 for child
+    for (int i = 0; i < curr->childSize; ++i)
     {
-        //lock_release(&locker);
-        printf("[fork] run child \n");
-        return 0;
-    }
-    
-    else // fork value of child pid for parent
-    {
-        //lock_release(&locker);
-        printf("[fork] run parent \n");
-        return child;
+        if (child_pid == curr->child_list[i])
+        {
+            is_child = true;
+            return 0;
+        }
     }
 }
 
@@ -250,6 +247,7 @@ void exit(int status)
 {
     printf("%s: exit(%d)\n", thread_current()->name, status);
     thread_current()->return_value = status;
+    //sema_up(&thread_current()->sema_wait);
     thread_exit();
 }
 

@@ -118,6 +118,7 @@ struct thread {
 	int return_value;
 	struct intr_frame *passed_frame; 
 	struct semaphore sema_initialization;
+	struct semaphore sema_wait;
 	struct file_descriptors *file_table;
 	struct file *executable;
 #ifdef VM

@@ -26,7 +26,7 @@
 static void process_cleanup (void);
 static bool load (const char *file_name, struct intr_frame *if_, char ** token_ptr);
 static void initd (void *f_name);
-static void __do_fork (void *);
+static void __do_fork (void *aux);
 
 /* General process initializer for initd and other process. */
 static void
@@ -98,20 +98,11 @@ tid_t
 process_fork (const char *name, struct intr_frame *if_) {
 	/* Clone current thread to new thread.*/
 	struct thread * curr = thread_current();
+
 	curr->passed_frame = if_;
-	//printf("[process_fork] tid : %d\n", curr->tid); --> 3
-	//printf("[process_fork] if_ rdi: %s \n", if_->R.rdi);
-	//printf("[process_fork] passed_frame: %s \n", curr->passed_frame->R.rdi);
 
 	sema_init(&curr->sema_initialization, 0);
-
-	//printf("[process_fork] child name: %s \n", name); --> child
-	
-	tid_t thread_created = thread_create (name,
-			PRI_DEFAULT, __do_fork, thread_current());
-
-	//printf("[process_fork] thread_created: %d \n", thread_created);
-
+	tid_t thread_created = thread_create (name, PRI_DEFAULT, __do_fork, curr);
 	sema_down(&curr->sema_initialization);
 
 	return thread_created;
@@ -170,6 +161,8 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
 		/* 6. TODO: if fail to insert page, do error handling. */
 		printf("[duplicate_pte] do error handling \n");
+		palloc_free_page(newpage);
+		return false;
 	}
 	return true;
 }
@@ -182,17 +175,12 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 static void
 __do_fork (void *aux) {
 	struct intr_frame if_;
-	struct thread *parent = (struct thread *) aux;
+	struct thread *parent = aux;
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
 	struct intr_frame *parent_if;
 	
 	parent_if = parent->passed_frame;
-
-
-	// WHY IS RDI CORRUPTED?? --> print string length gives "child: exit(-1)"
-	//printf("[__do_fork] parent_if length of rdi: %d \n", strlen(parent->passed_frame->R.rdi));
-	//printf("[__do_fork] parent_if rdi: %s \n", parent->passed_frame->R.rdi);
 
 	bool succ = true;
 
@@ -202,11 +190,10 @@ __do_fork (void *aux) {
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
 
 	//printf("[__do_fork] parent_if rdi: %s \n", parent_if->R.rdi);
-	
-	printf("[__do_fork] parent id: %d\n", parent->tid);
-	printf("[__do_fork] current id: %d\n", current->tid);
+	//printf("[__do_fork] parent id: %d\n", parent->tid);
+	//printf("[__do_fork] current id: %d\n", current->tid);
 	//printf("[__do_fork] parent child size: %d\n", parent->childSize);
-	
+	//printf("[__do_fork] parent_if rdi: %s \n", parent_if->R.rdi);
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
@@ -228,6 +215,8 @@ __do_fork (void *aux) {
 	}
 #endif
 
+	//printf("[__do_fork] current id: %d\n", current->tid);
+
 	/* TODO: Your code goes here.
 	 * TODO: Hint) To duplicate the file object, use `file_duplicate`
 	 * TODO:       in include/filesys/file.h. Note that parent should not return
@@ -235,16 +224,15 @@ __do_fork (void *aux) {
 	 * TODO:       the resources of parent.*/
 
 	//sema_up(&parent->sema_initialization);
+
 	
 	parent->child_list[parent->childSize] = current->tid;
     parent->childSize++;
 
+	//printf("[__do_fork] parent children : %d\n", parent->childSize);
+
 	struct file_descriptors *fd_list = parent->file_table;
 	//printf("[__do_fork] file_descriptors list size: %d \n", fd_list->size);
-	
-	//struct file *file_copy_ptr = file_duplicate()
-	if (parent->executable != NULL)
-		printf("[__do_fork] parent holds executable! \n");
 
 	struct file *file_copy_ptr = file_duplicate(parent->executable);
 	add_file(fd_list, file_copy_ptr);
@@ -254,18 +242,18 @@ __do_fork (void *aux) {
 	current->childSize = 0;
 	current->is_exit = false;
 	current->return_value = 0;
+
 	
-
-
 	sema_up(&parent->sema_initialization);
 
-
 	process_init ();
+
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
 	{
-		printf("[__do_fork] switch to newly created process \n");
+		//sema_down(&parent->sema_initialization);
+		//printf("[__do_fork] switch to newly created process \n");
 		do_iret (&if_);
 	}
 error:
@@ -327,8 +315,8 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 	struct thread *t = NULL, *cur = thread_current();
-	//printf("[process_wait] current tid: %d \n", cur->tid);
-	//printf("[process_wait] child_tid tid: %d \n", child_tid);
+	printf("[process_wait] current tid: %d \n", cur->tid);
+	printf("[process_wait] child_tid tid: %d \n", child_tid);
 
     int i = 0;
     bool is_child = false;
@@ -341,15 +329,17 @@ process_wait (tid_t child_tid UNUSED) {
         if (child_tid == cur->child_list[i])
         {
             is_child = true;
+			//printf("HERE\n");
         }
     }
-        
+    
     if (is_child && t != NULL && t->status != THREAD_DYING && t->tid != -1)
     {
-
+		printf("here\n");
 		// Infinite loop until child exits
 		while (t->is_exit == false);
-		//printf("HERE \n");
+		//if (t->is_exit == false)
+		//	sema_down(&t->sema_wait);
         return t->return_value;
     }
 
@@ -596,6 +586,8 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 	off_t file_ofs;
 	bool success = false;
 	int i;
+
+	//printf("[load] current thread: %d \n", t->tid);
 	
 
 	/* Allocate and activate page directory.  */

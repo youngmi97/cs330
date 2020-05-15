@@ -209,6 +209,7 @@ thread_create (const char *name, int priority,
 
 	struct thread *t;
 	tid_t tid;
+	//printf("[thread_create] thread name : %s \n", name);
 
 
 	ASSERT (function != NULL);
@@ -223,6 +224,9 @@ thread_create (const char *name, int priority,
 	/* Initialize thread. */
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
+
+	//printf("[thread_create] given tid : %d \n", tid);
+	
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -244,6 +248,7 @@ thread_create (const char *name, int priority,
 	}
 	// try to yield CPU to higher priority thread
 	thread_try_yield();
+
 	return tid;
 }
 
@@ -431,6 +436,7 @@ thread_get_recent_cpu (void) {
 static void
 idle (void *idle_started_ UNUSED) {
 	struct semaphore *idle_started = idle_started_;
+	//printf("[idle] called \n");
 
 	idle_thread = thread_current ();
 	//printf("[idle] current thread id: %d \n", idle_thread->tid);
@@ -479,7 +485,6 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 	//[project 2]
 	//printf("[init_thread] called \n");
-
 	//printf("[init_thread] initializing thread for : %s \n", name);
 
 	int i=0;
