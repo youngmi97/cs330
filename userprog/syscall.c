@@ -51,7 +51,6 @@ static struct file_descriptors fd_list;
 
 /* Local functions */
 static void halt(void) NO_RETURN;
-static pid_t fork(const char * file, struct intr_frame * f);
 static pid_t exec(const char *file);
 static bool create(const char *file, unsigned initial_size);
 static bool remove(const char *file);
@@ -194,30 +193,6 @@ syscall_handler (struct intr_frame *f UNUSED) {
  * SYSCALL HANDLING FUNCTIONS
  */
 
-static pid_t fork(const char * file, struct intr_frame * f)
-{   
-    pid_t child_pid;
-    struct thread *curr = thread_current();
-    curr->file_table = &fd_list;
-    struct thread *t = NULL;
-    bool is_child = false;
-    child_pid = process_fork(file, f);
-    printf("[fork] current thread: %d \n", curr->tid);
-
-
-    t = find_thread(child_pid);
-
-    for (int i = 0; i < curr->childSize; ++i)
-    {
-        if (child_pid == curr->child_list[i])
-        {
-            is_child = true;
-            return 0;
-        }
-    }
-}
-
-
 static pid_t exec(const char *cmd_line)
 {
     int retVal = -1;
@@ -272,8 +247,10 @@ static bool remove(const char *file)
 
 static int open(const char *file)
 {
-    struct file * file_ptr = NULL; /* opened file by filesys_open */
+    struct file * file_ptr = NULL;
     int fd = -1;
+
+    //printf("[open] called \n");
 
 
     lock_acquire(&locker);
@@ -294,12 +271,15 @@ static int open(const char *file)
     fd = add_file(&fd_list, file_ptr);
     lock_release(&locker);
 
+    //printf("[open] returning fd: %d \n", fd);
+
     return fd;
 }
 
 static void close(int fd)
 {
     struct file *file_ptr = NULL;
+    struct thread *curr = thread_current();
 
     lock_acquire(&locker);
 
@@ -307,8 +287,13 @@ static void close(int fd)
 
     if (file_ptr != NULL)
     {
-        file_close(file_ptr);
-        remove_file(&fd_list, fd);
+
+        //have to remove_file only when it is not a child process
+        if(curr->childSize != 0)
+        {
+            file_close(file_ptr);
+            remove_file(&fd_list, fd);
+        }
     }
 
     lock_release(&locker);
@@ -316,8 +301,10 @@ static void close(int fd)
 
 static int read(int fd, void *buffer, unsigned length)
 {
-    //printf("at read syscall \n");
-    //printf("input length requested: %d \n", length);
+    //printf("[read] fd input: %d \n", fd);
+    //printf("[read]input length requested: %d \n", length);
+    //printf("[read] called by tid: %d \n", thread_current()->tid);
+    struct thread *curr = thread_current();
     int retVal = -1;
     unsigned int counterForLoop;
     struct file* file_ptr = NULL;
@@ -347,12 +334,15 @@ static int read(int fd, void *buffer, unsigned length)
         }
         else
         {
-
             file_ptr = get_file(&fd_list, fd);
 
             if (file_ptr != NULL)
             {
                 retVal = file_read(file_ptr, buffer, length);
+
+
+                if (curr->tid !=  get_file_owner(&fd_list, fd))
+                    file_ptr->pos -= (off_t) retVal;
             }
             else
             {
@@ -362,8 +352,6 @@ static int read(int fd, void *buffer, unsigned length)
     }
 
     lock_release(&locker);
-
-    //printf("actually read: %d \n", retVal);
 
     return retVal;
 
@@ -518,6 +506,7 @@ struct file* get_file(struct file_descriptors * table, int fd)
 
     for (i = 0; i < size; ++i)
     {
+        //printf("[get_file] fd in fd_list: %d \n", table->files[i].fd);
         if (table->files[i].fd == fd)
         {
             return table->files[i].file_ptr;

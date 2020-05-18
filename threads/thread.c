@@ -338,6 +338,8 @@ thread_exit (void) {
 	
 	sema_down(&thread_current()->sema_remove);
 	thread_current()->is_exit=true;
+
+	//sema_down(&thread_current()->sema_remove);
   	list_remove (&thread_current()->allelem);
 	intr_disable();
 	// [project 1] remove from mlfqs list

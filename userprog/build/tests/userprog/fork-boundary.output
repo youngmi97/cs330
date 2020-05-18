@@ -1,10 +1,17 @@
-Kernel command line: -q -f put fork-boundary run fork-boundary
+c[?7l[2J[0mSeaBIOS (version rel-1.11.0-0-g63451fca13-prebuilt.qemu-project.org)
+
+
+iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+0FF915A0+0FEF15A0 C980
+Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+
+
+Booting from Hard Disk..Kernel command line: -q -f put fork-boundary run fork-boundary
 0 ~ 9fc00 1
 100000 ~ ffe0000 1
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
-Calibrating timer...  183,296,000 loops/s.
+Calibrating timer...  104,755,200 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 103 sector (51 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -13,36 +20,19 @@ Boot complete.
 Putting 'fork-boundary' into the file system...
 Executing 'fork-boundary':
 (fork-boundary) begin
-[process_wait] current tid: 1 
-[process_wait] child_tid tid: 3 
-t is not null
-t is not null
-t is not null
-here
-[process_wait] current tid: 4 
-[process_wait] child_tid tid: 2 
-t is not null
-t is not null
+(fork-boundary) child run
+child-simple: exit(54)
 (fork-boundary) fork
 (fork-boundary) wait
-(fork-boundary) wait: FAILED
-child-simple: exit(1)
-[process_wait] current tid: 3 
-[process_wait] child_tid tid: 4 
-t is not null
-t is not null
-t is not null
-(fork-boundary) fork
-(fork-boundary) wait
-(fork-boundary) wait: FAILED
-fork-boundary: exit(1)
+(fork-boundary) end
+fork-boundary: exit(0)
 Execution of 'fork-boundary' complete.
-Timer: 81 ticks
-Thread: 30 idle ticks, 49 kernel ticks, 2 user ticks
+Timer: 80 ticks
+Thread: 34 idle ticks, 41 kernel ticks, 6 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes
-Console: 1326 characters output
+Console: 964 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

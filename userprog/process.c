@@ -99,10 +99,13 @@ process_fork (const char *name, struct intr_frame *if_) {
 	/* Clone current thread to new thread.*/
 	struct thread * curr = thread_current();
 
+	//printf("[process_fork] called by: %d \n", curr->tid);
+
 	curr->passed_frame = if_;
 
 	sema_init(&curr->sema_initialization, 0);
 	tid_t thread_created = thread_create (name, PRI_DEFAULT, __do_fork, curr);
+	//printf("[process_fork] thread created: %d \n", thread_created);
 	sema_down(&curr->sema_initialization);
 
 	return thread_created;
@@ -138,10 +141,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	newpage = palloc_get_page (PAL_USER);
 	//no pages available
 	if(newpage == NULL)
-	{
-		//printf("[duplicate_pte] newpage is NULL \n");
 		return true;
-	}
 	
 	
 	/* 4. TODO: Duplicate parent's page to the new page and
@@ -149,8 +149,6 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	 *    TODO: according to the result). */
 	
 
-	//phdr.p_flags & PF_W
-	//printf("[duplicate_pte] duplicating to newpage\n");
 	memcpy(newpage, parent_page, PGSIZE);
 	writable = is_writable(pte);
 
@@ -160,7 +158,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	 *    permission. */
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
 		/* 6. TODO: if fail to insert page, do error handling. */
-		printf("[duplicate_pte] do error handling \n");
+		//printf("[duplicate_pte] do error handling \n");
 		palloc_free_page(newpage);
 		return false;
 	}
@@ -184,23 +182,17 @@ __do_fork (void *aux) {
 
 	bool succ = true;
 
-	//printf("[__do_fork] called \n");
+	//printf("[__do_fork] parent tid: %d \n", parent->tid);
+	//printf("[__do_fork] child tid: %d \n", current->tid);
 
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
 
-	//printf("[__do_fork] parent_if rdi: %s \n", parent_if->R.rdi);
-	//printf("[__do_fork] parent id: %d\n", parent->tid);
-	//printf("[__do_fork] current id: %d\n", current->tid);
-	//printf("[__do_fork] parent child size: %d\n", parent->childSize);
-	//printf("[__do_fork] parent_if rdi: %s \n", parent_if->R.rdi);
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
 	if (current->pml4 == NULL)
 		goto error;
-
-	//process_wait(current->tid);
 
 	process_activate (current);
 #ifdef VM
@@ -215,33 +207,27 @@ __do_fork (void *aux) {
 	}
 #endif
 
-	//printf("[__do_fork] current id: %d\n", current->tid);
-
 	/* TODO: Your code goes here.
 	 * TODO: Hint) To duplicate the file object, use `file_duplicate`
 	 * TODO:       in include/filesys/file.h. Note that parent should not return
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
 
-	//sema_up(&parent->sema_initialization);
-
 	
 	parent->child_list[parent->childSize] = current->tid;
     parent->childSize++;
 
-	//printf("[__do_fork] parent children : %d\n", parent->childSize);
-
 	struct file_descriptors *fd_list = parent->file_table;
-	//printf("[__do_fork] file_descriptors list size: %d \n", fd_list->size);
 
 	struct file *file_copy_ptr = file_duplicate(parent->executable);
-	add_file(fd_list, file_copy_ptr);
 
 	current->file_table = fd_list;
 	current->executable = file_copy_ptr;
 	current->childSize = 0;
 	current->is_exit = false;
 	current->return_value = 0;
+
+	if_.R.rax=0;
 
 	
 	sema_up(&parent->sema_initialization);
@@ -252,12 +238,11 @@ __do_fork (void *aux) {
 	/* Finally, switch to the newly created process. */
 	if (succ)
 	{
-		//sema_down(&parent->sema_initialization);
 		//printf("[__do_fork] switch to newly created process \n");
 		do_iret (&if_);
 	}
 error:
-	printf("[__do_fork] exiting thread %d \n", thread_current() ->tid);
+	//printf("[__do_fork] exiting thread %d \n", thread_current() ->tid);
 	thread_exit ();
 }
 
@@ -329,18 +314,14 @@ process_wait (tid_t child_tid UNUSED) {
         if (child_tid == cur->child_list[i])
         {
             is_child = true;
-			//printf("HERE\n");
         }
     }
     
     if (is_child && t != NULL && t->status != THREAD_DYING && t->tid != -1)
     {
-		//printf("here\n");
 		sema_up(&t->sema_remove);
 		// Infinite loop until child exits
 		while (t->is_exit == false);
-		//if (t->is_exit == false)
-		//	sema_down(&t->sema_wait);
         return t->return_value;
     }
 
