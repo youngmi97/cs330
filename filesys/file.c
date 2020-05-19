@@ -16,6 +16,7 @@ file_open (struct inode *inode) {
 		file->deny_write = false;
 		return file;
 	} else {
+		//printf("[file_open] inode or file is NULL \n");
 		inode_close (inode);
 		free (file);
 		return NULL;

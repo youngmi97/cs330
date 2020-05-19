@@ -1,2 +1,2 @@
 FAIL
-run: read() returned -1 instead of 353: FAILED
+run: TIMEOUT

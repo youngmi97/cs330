@@ -64,12 +64,15 @@ filesys_create (const char *name, off_t initial_size) {
 struct file *
 filesys_open (const char *name) {
 	struct dir *dir = dir_open_root ();
+	//printf("[filesys_open] root directory address: %llx \n", dir);
 	struct inode *inode = NULL;
 
 	if (dir != NULL)
+	{
+		//printf("[filesys_open] dir not NULL \n");
 		dir_lookup (dir, name, &inode);
+	}
 	dir_close (dir);
-	//printf("in filesys_open ------- \n");
 
 	return file_open (inode);
 }

@@ -23,19 +23,17 @@ Executing 'wait-twice':
 (wait-twice) begin
 (child-simple) run
 child-simple: exit(81)
-(wait-twice) end
-child-simple: exit(0)
-(wait-twice) wait(exec()) = 0
+(wait-twice) wait(exec()) = 81
 (wait-twice) wait(exec()) = -1
 (wait-twice) end
 wait-twice: exit(0)
 Execution of 'wait-twice' complete.
-Timer: 499 ticks
-Thread: 35 idle ticks, 252 kernel ticks, 213 user ticks
+Timer: 291 ticks
+Thread: 34 idle ticks, 250 kernel ticks, 7 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 157 reads, 434 writes
 hd1:0: 198 reads, 0 writes
-Console: 1060 characters output
+Console: 1020 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

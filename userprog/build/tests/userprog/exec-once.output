@@ -11,7 +11,7 @@ Booting from Hard Disk..Kernel command line: -q -f put exec-once put child-simpl
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
-Calibrating timer...  104,755,200 loops/s.
+Calibrating timer...  78,540,800 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 198 sector (99 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -23,18 +23,14 @@ Executing 'exec-once':
 (exec-once) begin
 (exec-once) I'm your father
 (child-simple) run
-child-simple: exit(81)
-(exec-once) end
-exec-once: exit(0)
-Kernel PANIC at ../../threads/palloc.c:314 in palloc_free_multiple(): executed an unreachable statement
-Call stack: 0x800421898b 0x800420c052 0x800420c148 0x800420d43f 0x800420d4c2 0x800420d545 0x800420d60e 0x800421c691 0x800421c62d 0x800420717f 0x800421de1c 0x800421db2e 0x800421d9e3exec-once: exit(-1)
+exec-once: exit(81)
 Execution of 'exec-once' complete.
-Timer: 293 ticks
-Thread: 37 idle ticks, 251 kernel ticks, 5 user ticks
+Timer: 88 ticks
+Thread: 39 idle ticks, 43 kernel ticks, 6 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 157 reads, 434 writes
 hd1:0: 198 reads, 0 writes
-Console: 1282 characters output
+Console: 937 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

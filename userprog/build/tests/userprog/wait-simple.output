@@ -23,18 +23,16 @@ Executing 'wait-simple':
 (wait-simple) begin
 (child-simple) run
 child-simple: exit(81)
-(wait-simple) end
-child-simple: exit(0)
-(wait-simple) wait(exec()) = 0
+(wait-simple) wait(exec()) = 81
 (wait-simple) end
 wait-simple: exit(0)
 Execution of 'wait-simple' complete.
-Timer: 499 ticks
-Thread: 36 idle ticks, 251 kernel ticks, 212 user ticks
+Timer: 289 ticks
+Thread: 35 idle ticks, 249 kernel ticks, 6 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 157 reads, 434 writes
 hd1:0: 198 reads, 0 writes
-Console: 1039 characters output
+Console: 998 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

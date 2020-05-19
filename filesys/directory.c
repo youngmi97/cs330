@@ -109,10 +109,16 @@ dir_lookup (const struct dir *dir, const char *name,
 	ASSERT (dir != NULL);
 	ASSERT (name != NULL);
 
+	
 	if (lookup (dir, name, &e, NULL))
+	{
 		*inode = inode_open (e.inode_sector);
+	}
 	else
+	{
+		//printf("[dir_lookup] lookup fail \n");
 		*inode = NULL;
+	}
 
 	return *inode != NULL;
 }
@@ -138,7 +144,10 @@ dir_add (struct dir *dir, const char *name, disk_sector_t inode_sector) {
 
 	/* Check that NAME is not in use. */
 	if (lookup (dir, name, NULL, NULL))
+	{
+		//printf("[dir_add] lookup fail \n");
 		goto done;
+	}
 
 	/* Set OFS to offset of free slot.
 	 * If there are no free slots, then it will be set to the

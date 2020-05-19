@@ -21,16 +21,14 @@ Putting 'exec-missing' into the file system...
 Executing 'exec-missing':
 (exec-missing) begin
 load: no-such-file: open failed
-Kernel PANIC at ../../userprog/process.c:91 in initd(): Fail to launch initd
-
-Call stack: 0x800421898b 0x800421c067 0x800420758b.
-The `backtrace' program can make call stacks useful.
-Read "Backtraces" in the "Debugging Tools" chapter
-of the Pintos documentation for more information.
-Timer: 137 ticks
-Thread: 30 idle ticks, 104 kernel ticks, 3 user ticks
+exec-missing: exit(-1)
+Execution of 'exec-missing' complete.
+Timer: 69 ticks
+Thread: 35 idle ticks, 30 kernel ticks, 4 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 96 reads, 228 writes
 hd1:0: 100 reads, 0 writes
-Console: 1104 characters output
-Key
+Console: 879 characters output
+Keyboard: 0 keys pressed
+Exception: 0 page faults
+Powering off...

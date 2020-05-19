@@ -1,7 +1,18 @@
 FAIL
-Kernel panic in run: PANIC at ../../userprog/process.c:91 in initd(): Fail to launch initd
-Call stack: 0x800421898b 0x800421c067 0x800420758b
+Kernel panic in run: PANIC at ../../userprog/exception.c:99 in kill(): Kernel bug - unexpected interrupt in kernel
+Call stack: 0x800421898b 0x800421d7cc 0x80042096e6 0x8004209b04 0x800421913d 0x800420c83d 0x800422026c 0x800421f833 0x800421ec16 0x800421cc21 0x800421c4b6 0x800421ddaa 0x800421db93 0x800421d9e3c
 Translation of call stack:
 0x000000800421898b: debug_panic (lib/kernel/debug.c:32)
-0x000000800421c067: initd (userprog/process.c:92)
-0x000000800420758b: kernel_thread (threads/thread.c:477)
+0x000000800421d7cc: kill (userprog/exception.c:105)
+0x00000080042096e6: intr_handler (threads/interrupt.c:352)
+0x0000008004209b04: intr_entry (threads/intr-stubs.o:?)
+0x000000800421913d: list_push_front (lib/kernel/list.c:197)
+0x000000800420c83d: free (threads/malloc.c:222)
+0x000000800422026c: inode_close (filesys/inode.c:167)
+0x000000800421f833: dir_close (filesys/directory.c:64)
+0x000000800421ec16: filesys_open (filesys/filesys.c:77)
+0x000000800421cc21: load (userprog/process.c:590)
+0x000000800421c4b6: process_exec (userprog/process.c:273)
+0x000000800421ddaa: exec (userprog/syscall.c:205)
+0x000000800421db93: syscall_handler (userprog/syscall.c:127)
+0x00000800421d9e3c: (unknown)

@@ -22,21 +22,25 @@ Putting 'child-bad' into the file system...
 Executing 'wait-killed':
 (wait-killed) begin
 (child-bad) begin
+Interrupt 0x0d (#GP General Protection Exception) at rip=8004218f3f
+ cr2=0000000000000000 error=               0
+rax cccccccccccccccc rbx 00000080042b8e80 rcx 0000000000000400 rdx 00000080042b7818
+rsp 00000080042b8be0 rbp 00000080042b8bf0 rsi 00000080042b7818 rdi 00000080042b7818
+rip 0000008004218f3f r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
+r11 0000000000000212 r12 000000800421dace r13 000000800420888c r14 00000080042b8e20
+r15 0000000000000006 rflags 00000206
+es: 001b ds: 001b cs: 0008 ss: 0010
+Kernel PANIC at ../../userprog/exception.c:99 in kill(): Kernel bug - unexpected interrupt in kernel
+Call stack: 0x800421898b 0x800421d7cc 0x80042096e6 0x8004209b04 0x800421913d 0x800420c83d 0x800422026c 0x800421f833 0x800421ec16 0x800421cc21 0x800421c4b6 0x800421ddaa 0x800421db93 0x800421d9e3child-bad: exit(-1)
+(wait-killed) wait(exec()) = -1
 (wait-killed) end
-child-bad: exit(0)
-(child-bad) should have exited with -1: FAILED
-child-bad: exit(1)
-load: pintos: open failed
-Kernel PANIC at ../../userprog/process.c:91 in initd(): Fail to launch initd
-
-Call stack: 0x800421898b 0x800421c067 0x800420758b.
-The `backtrace' program can make call stacks useful.
-Read "Backtraces" in the "Debugging Tools" chapter
-of the Pintos documentation for more information.
-Timer: 543 ticks
-Thread: 39 idle ticks, 303 kernel ticks, 201 user ticks
+wait-killed: exit(0)
+Execution of 'wait-killed' complete.
+Kernel PANIC recursion at ../../threads/thread.c:665 in thread_donate_blockers().
+Timer: 362 ticks
+Thread: 35 idle ticks, 306 kernel ticks, 21 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 169 reads, 438 writes
 hd1:0: 200 reads, 0 writes
-Console: 1276 characters output
+Console: 1887 characters output
 Key

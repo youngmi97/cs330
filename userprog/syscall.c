@@ -13,6 +13,7 @@
 #include "threads/malloc.h"
 #include "threads/flags.h"
 #include "threads/init.h"
+#include "threads/palloc.h"
 
 #include "filesys/filesys.h"
 #include "filesys/file.h"
@@ -196,14 +197,13 @@ syscall_handler (struct intr_frame *f UNUSED) {
 static pid_t exec(const char *cmd_line)
 {
     int retVal = -1;
-
-    lock_acquire(&locker);
     
     if (cmd_line != NULL)
     {
-        retVal = process_create_initd(cmd_line);
+        char *exec_page = palloc_get_page(0);
+		strlcpy (exec_page, cmd_line, PGSIZE);
+        retVal = process_exec(exec_page);
     }
-    lock_release(&locker);
 
     return retVal;
 }
@@ -223,6 +223,7 @@ void exit(int status)
     printf("%s: exit(%d)\n", thread_current()->name, status);
     thread_current()->return_value = status;
     //sema_up(&thread_current()->sema_wait);
+    //printf("[process_exit] file table size: %d \n", thread_current()->file_table->size);
     thread_exit();
 }
 
@@ -258,6 +259,7 @@ static int open(const char *file)
     if (!is_user_vaddr(file) || file == NULL)
     {
         lock_release(&locker);
+        //printf("[open] file not in user vaddr \n");
         exit(-1);
     }
 
@@ -265,13 +267,12 @@ static int open(const char *file)
     if (file_ptr == NULL)
     {
         lock_release(&locker);
+        //printf("[open] file_ptr is NULL \n");
         return -1;
     }
 
     fd = add_file(&fd_list, file_ptr);
     lock_release(&locker);
-
-    //printf("[open] returning fd: %d \n", fd);
 
     return fd;
 }
@@ -477,7 +478,7 @@ static unsigned tell(int fd)
 
 int add_file(struct file_descriptors *table, struct file* file_ptr)
 {
-    //printf("calling add_file\n");
+    //printf("[add_file] called\n");
     int size = table->size;
     struct file_elem file_el;
     struct thread * curr = thread_current();

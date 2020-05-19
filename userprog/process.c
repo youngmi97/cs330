@@ -253,8 +253,6 @@ process_exec (void *f_name) {
 	char *file_name = f_name;
 	char *token_ptr = NULL;
 	bool success;
-	//struct thread *curr = thread_current();
-	//printf("[process_exec] current thread: %d \n", curr->tid);
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -267,6 +265,7 @@ process_exec (void *f_name) {
 
 	/* We first kill the current context */
 	process_cleanup ();
+
 	file_name = strtok_r(file_name, " ", &token_ptr);
 	/* And then load the binary */
 	success = load (file_name, &_if, &token_ptr);
@@ -276,10 +275,11 @@ process_exec (void *f_name) {
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success)
+	{
 		return -1;
+	}
 
 	/* Start switched process. */
-	//printf("[process_exec] call do_iret\n");
 	do_iret (&_if);
 	NOT_REACHED ();
 }
@@ -340,7 +340,8 @@ process_exit (void) {
 	//printf("[process_exit] called \n");
 	//printf("%s: exit(%d)\n", thread_current()->name, thread_current()->status);
     //thread_current()->return_value = thread_current()->status;
-//	printf("[process_exit] thread: %d, %s \n", thread_current()->tid, thread_current()->name);
+	//printf("[process_exit] thread: %d, %s \n", thread_current()->tid, thread_current()->name);
+
 	 
 
 	process_cleanup ();
@@ -582,6 +583,7 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 
 	//printf("[load] calling filesys_open \n");
 	/* Open executable file. */
+	//printf("[load] file name: %s \n", file_name);
 	file = filesys_open (file_name);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);

@@ -28,18 +28,14 @@ Executing 'exec-arg':
 (args) argv[1] = 'childarg'
 (args) argv[2] = null
 (args) end
-child-args: exit(0)
-(exec-arg) end
 exec-arg: exit(0)
-Kernel PANIC at ../../threads/palloc.c:314 in palloc_free_multiple(): executed an unreachable statement
-Call stack: 0x800421898b 0x800420c052 0x800420c148 0x800420d43f 0x800420d4c2 0x800420d545 0x800420d60e 0x800421c691 0x800421c62d 0x800420717f 0x800421de1c 0x800421db2e 0x800421d9e3exec-arg: exit(-1)
 Execution of 'exec-arg' complete.
-Timer: 87 ticks
-Thread: 34 idle ticks, 48 kernel ticks, 6 user ticks
+Timer: 82 ticks
+Thread: 35 idle ticks, 41 kernel ticks, 6 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 152 reads, 436 writes
 hd1:0: 199 reads, 0 writes
-Console: 1364 characters output
+Console: 1026 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

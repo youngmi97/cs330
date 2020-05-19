@@ -24,24 +24,7 @@ Executing 'exec-read':
 (exec-read) begin
 (exec-read) open "sample.txt"
 (exec-read) read "sample.txt" first 20 bytes
-(exec-read) end
 (child-read) begin
 (child-read) open "sample.txt"
-(child-read) read "sample.txt" first 20 bytes
-(child-read) read "sample.txt" remainders
-(child-read) Child success
-(child-read) end
-child-read: exit(0)
-child-read: exit(0)
-(exec-read) read() returned -1 instead of 353: FAILED
-exec-read: exit(1)
-Execution of 'exec-read' complete.
-Timer: 389 ticks
-Thread: 41 idle ticks, 190 kernel ticks, 158 user ticks
-hd0:0: 0 reads, 0 writes
-hd0:1: 211 reads, 494 writes
-hd1:0: 223 reads, 0 writes
-Console: 1318 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+child-read: exit(-1)
+TIMEOUT
