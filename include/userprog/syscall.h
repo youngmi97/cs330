@@ -10,7 +10,7 @@ typedef int pid_t;
 
 void syscall_init (void);
 void exit(int status);
-
+void close(int fd);
 struct file_elem
 {
     struct file *file_ptr;

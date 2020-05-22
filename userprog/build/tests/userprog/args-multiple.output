@@ -1,11 +1,4 @@
-c[?7l[2J[0mSeaBIOS (version rel-1.11.0-0-g63451fca13-prebuilt.qemu-project.org)
-
-
-iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+0FF915A0+0FEF15A0 C980
-Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
-
-
-Booting from Hard Disk..Kernel command line: -q -f put args-multiple run 'args-multiple some arguments for you!'
+Kernel command line: -q -f put args-multiple run 'args-multiple some arguments for you!'
 0 ~ 9fc00 1
 100000 ~ ffe0000 1
 Pintos booting with: 
@@ -30,8 +23,8 @@ Executing 'args-multiple some arguments for you!':
 (args) end
 args-multiple: exit(0)
 Execution of 'args-multiple' complete.
-Timer: 76 ticks
-Thread: 32 idle ticks, 39 kernel ticks, 5 user ticks
+Timer: 87 ticks
+Thread: 30 idle ticks, 54 kernel ticks, 3 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 79 reads, 226 writes
 hd1:0: 99 reads, 0 writes

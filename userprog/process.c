@@ -250,10 +250,17 @@ error:
  * Returns -1 on fail. */
 int
 process_exec (void *f_name) {
-	char *file_name = f_name;
+	//char *file_name = f_name;
+
+	char* file_name=palloc_get_page(0);
+	if(file_name==NULL){
+		palloc_free_page(file_name);
+		return -1;}
+	
 	char *token_ptr = NULL;
 	bool success;
 
+	strlcpy(file_name, (char*)f_name, PGSIZE);
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
@@ -273,7 +280,7 @@ process_exec (void *f_name) {
 	
 
 	/* If load failed, quit. */
-	palloc_free_page (file_name);
+	//palloc_free_page (file_name);
 	if (!success)
 	{
 		return -1;
@@ -338,12 +345,19 @@ process_exit (void) {
 	 * TODO: We recommend you to implement process resource cleanup here. */
 
 	//printf("[process_exit] called \n");
-	//printf("%s: exit(%d)\n", thread_current()->name, thread_current()->status);
+//	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->status);
     //thread_current()->return_value = thread_current()->status;
 	//printf("[process_exit] thread: %d, %s \n", thread_current()->tid, thread_current()->name);
 
-	 
+	//process_cleanup();
 
+	if(curr->file_table!=NULL){
+		int size=curr->file_table->size;
+		for (int i=0; i<size; i++){
+//			printf("[close] :%d\n",curr->file_table->size);
+			close(curr->file_table->files[i].fd);
+		}
+	}
 	process_cleanup ();
 }
 
@@ -351,7 +365,7 @@ process_exit (void) {
 static void
 process_cleanup (void) {
 	struct thread *curr = thread_current ();
-
+//	printf("[process_cleanup] welcome!\n");
 #ifdef VM
 	supplemental_page_table_kill (&curr->spt);
 #endif
@@ -361,6 +375,7 @@ process_cleanup (void) {
 	 * to the kernel-only page directory. */
 	pml4 = curr->pml4;
 	if (pml4 != NULL) {
+//		printf("[process_cleanup] pml4 is not null\n");
 		/* Correct ordering here is crucial.  We must set
 		 * cur->pagedir to NULL before switching page directories,
 		 * so that a timer interrupt can't switch back to the
@@ -369,9 +384,13 @@ process_cleanup (void) {
 		 * directory, or our active page directory will be one
 		 * that's been freed (and cleared). */
 		curr->pml4 = NULL;
+//		printf("[cleanup] pml4 as null\n");
 		pml4_activate (NULL);
+//		printf("[cleanup] pml4 activate\n");
 		pml4_destroy (pml4);
+//		printf("[cleanup] pml4 destroy\n");
 	}
+//	printf("[process_cleanup] end\n");
 }
 
 /* Sets up the CPU for running user code in the nest thread.
@@ -684,7 +703,9 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
         printf("load: error in setup_arguments \n");
     }
 
-
+	palloc_free_page(file_name);
+//	if(success==true) printf("[load] success is true\n");
+	return success;
 	//printf("[load] argc from if_: %d \n", if_->R.rdi);
 	//printf("[load] argv[0] addr from if_: %p \n", if_->R.rsi);
 	//printf("[load] rsp value: %p \n", if_->rsp);
@@ -697,6 +718,7 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 done:
 	/* We arrive here whether the load is successful or not. */
 	file_close (file);
+//	palloc_free_page(file_name);
 	return success;
 }
 

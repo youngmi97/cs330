@@ -48,11 +48,11 @@ pass tests/userprog/exec-bad-ptr
 FAIL tests/userprog/exec-read
 pass tests/userprog/wait-simple
 pass tests/userprog/wait-twice
-FAIL tests/userprog/wait-killed
+pass tests/userprog/wait-killed
 pass tests/userprog/wait-bad-pid
 FAIL tests/userprog/multi-recurse
 FAIL tests/userprog/multi-child-fd
-FAIL tests/userprog/rox-simple
+pass tests/userprog/rox-simple
 FAIL tests/userprog/rox-child
 FAIL tests/userprog/rox-multichild
 pass tests/userprog/bad-read

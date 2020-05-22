@@ -61,7 +61,7 @@ static int read(int fd, void *buffer, unsigned length);
 static int write(int fd, const void *buffer, unsigned length);
 static void seek(int fd, unsigned position);
 static unsigned tell(int fd);
-static void close(int fd);
+void close(int fd);
 
 
 void
@@ -111,7 +111,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
         case SYS_EXIT:
             //printf ("[syscall_handler] called SYS_EXIT\n");
-            //printf ("[syscall_handler] called from: %d\n", thread_current()->tid);
+//            printf ("[syscall_handler] called from: %d\n", thread_current()->tid);
             exit((int) f->R.rdi);
             break; /* Terminate this process. */
         
@@ -270,14 +270,15 @@ static int open(const char *file)
         //printf("[open] file_ptr is NULL \n");
         return -1;
     }
-
+    
+    if(strcmp(thread_current()->name, file)==0) file_deny_write(file_ptr);
     fd = add_file(&fd_list, file_ptr);
     lock_release(&locker);
 
     return fd;
 }
 
-static void close(int fd)
+void close(int fd)
 {
     struct file *file_ptr = NULL;
     struct thread *curr = thread_current();
@@ -292,8 +293,10 @@ static void close(int fd)
         //have to remove_file only when it is not a child process
         if(curr->childSize != 0)
         {
+//	   printf("[close] size before %d\n", fd_list.size); 
             file_close(file_ptr);
             remove_file(&fd_list, fd);
+//	   printf("[close] size after %d\n", fd_list.size);
         }
     }
 
@@ -309,6 +312,7 @@ static int read(int fd, void *buffer, unsigned length)
     int retVal = -1;
     unsigned int counterForLoop;
     struct file* file_ptr = NULL;
+//    if(!is_user_vaddr(buffer)) exit(-1);
 
     lock_acquire(&locker);
 

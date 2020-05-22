@@ -1,19 +1,2 @@
 FAIL
-Kernel panic in run: PANIC at ../../userprog/exception.c:99 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x800421898b 0x800421d7cc 0x80042096e6 0x8004209b04 0x800421913d 0x800420c83d 0x800422026c 0x800421f833 0x800421ec16 0x800421df37 0x800421dc3a 0x800421d9e3 0x400153 0x40022e 0x400e7a
-Translation of call stack:
-0x000000800421898b: debug_panic (lib/kernel/debug.c:32)
-0x000000800421d7cc: kill (userprog/exception.c:105)
-0x00000080042096e6: intr_handler (threads/interrupt.c:352)
-0x0000008004209b04: intr_entry (threads/intr-stubs.o:?)
-0x000000800421913d: list_push_front (lib/kernel/list.c:197)
-0x000000800420c83d: free (threads/malloc.c:222)
-0x000000800422026c: inode_close (filesys/inode.c:167)
-0x000000800421f833: dir_close (filesys/directory.c:64)
-0x000000800421ec16: filesys_open (filesys/filesys.c:77)
-0x000000800421df37: open (userprog/syscall.c:265)
-0x000000800421dc3a: syscall_handler (userprog/syscall.c:150)
-0x000000800421d9e3: no_sti (userprog/syscall-entry.o:?)
-0x0000000000400153: (unknown)
-0x000000000040022e: (unknown)
-0x0000000000400e7a: (unknown)
+run: TIMEOUT

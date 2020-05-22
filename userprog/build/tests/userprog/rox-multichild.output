@@ -1,11 +1,4 @@
-c[?7l[2J[0mSeaBIOS (version rel-1.11.0-0-g63451fca13-prebuilt.qemu-project.org)
-
-
-iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+0FF915A0+0FEF15A0 C980
-Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
-
-
-Booting from Hard Disk..Kernel command line: -q -f put rox-multichild put child-rox run rox-multichild
+Kernel command line: -q -f put rox-multichild put child-rox run rox-multichild
 0 ~ 9fc00 1
 100000 ~ ffe0000 1
 Pintos booting with: 
@@ -24,30 +17,22 @@ Executing 'rox-multichild':
 (rox-multichild) open "child-rox"
 (rox-multichild) read "child-rox"
 (rox-multichild) write "child-rox"
-(rox-multichild) exec "child-rox 5"
 (child-rox) begin
-Interrupt 0x0d (#GP General Protection Exception) at rip=8004218f3f
- cr2=0000000000000000 error=               0
-rax cccccccccccccccc rbx 00000080042b8e80 rcx 0000000000000400 rdx 00000080042b7818
-rsp 00000080042b8de0 rbp 00000080042b8df0 rsi 00000080042b7818 rdi 00000080042b7818
-rip 0000008004218f3f r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
-r11 0000000000000202 r12 000000800421dace r13 000000800420888c r14 00000080042b8e20
-r15 0000000000000006 rflags 00000206
-es: 001b ds: 001b cs: 0008 ss: 0010
-Kernel PANIC at ../../userprog/exception.c:99 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x800421898b 0x800421d7cc 0x80042096e6 0x8004209b04 0x800421913d 0x800420c83d 0x800422026c 0x800421f833 0x800421ec16 0x800421df37 0x800421dc3a 0x800421d9e3 0x400153 0x40022e 0x400e7a 0 0xe87d894818ec8348Interrupt 0x0d (#GP General Protection Exception) at rip=80042159c5
- cr2=0000000000000000 error=               0
-rax 53e5894855c3c990 rbx 00000080042b8e80 rcx 00000080040b8000 rdx 00000000000003d4
-rsp 00000080042b8c20 rbp 00000080042b8c30 rsi 000000000000b70f rdi 0000000000000000
-rip 00000080042159c5 r8 00000080042b8b38  r9 000000800421be04 r10 0000000000000000
-r11 0000000000000202 r12 000000800421dace r13 000000800420888c r14 00000080042b8e20
-r15 0000000000000006 rflags 00000006
-es: 0010 ds: 0010 cs: 0008 ss: 0010
-Kernel PANIC recursion at ../../userprog/exception.c:99 in kill().
-Timer: 327 ticks
-Thread: 34 idle ticks, 277 kernel ticks, 16 user ticks
-hd0:0: 0 reads, 0 writes
-hd0:1: 169 reads, 467 writes
-hd1:0: 214 reads, 0 writes
-Console: 2441 characters output
-Key
+(rox-multichild) exec "child-rox 5"
+(child-rox) try to write "child-rox"
+(child-rox) begin
+(child-rox) exec "child-rox 4"
+(child-rox) try to write "child-rox"
+(child-rox) begin
+(child-rox) exec "child-rox 3"
+(child-rox) try to write "child-rox"
+(child-rox) begin
+(child-rox) exec "child-rox 2"
+(child-rox) try to write "child-rox"
+(child-rox) begin
+(child-rox) exec "child-rox 1"
+(child-rox) try to write "child-rox"
+(child-rox) try to write "child-rox"
+(child-rox) end
+child-rox: exit(12)
+TIMEOUT

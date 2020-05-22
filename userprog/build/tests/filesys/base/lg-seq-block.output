@@ -1,11 +1,3 @@
-c[?7l[2J[0mSeaBIOS (version rel-1.11.0-0-g63451fca13-prebuilt.qemu-project.org)
-
-
-iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+0FF915A0+0FEF15A0 C980
-Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
-
-
-Booting from Hard Disk...
 Kernel command line: -q -f put lg-seq-block run lg-seq-block
 0 ~ 9fc00 1
 100000 ~ ffe0000 1
@@ -31,8 +23,8 @@ Executing 'lg-seq-block':
 (lg-seq-block) end
 lg-seq-block: exit(0)
 Execution of 'lg-seq-block' complete.
-Timer: 103 ticks
-Thread: 33 idle ticks, 39 kernel ticks, 31 user ticks
+Timer: 137 ticks
+Thread: 30 idle ticks, 79 kernel ticks, 28 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 551 reads, 691 writes
 hd1:0: 104 reads, 0 writes
