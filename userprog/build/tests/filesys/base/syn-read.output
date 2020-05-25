@@ -4,7 +4,7 @@ Kernel command line: -q -f put syn-read put child-syn-read run syn-read
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
-Calibrating timer...  78,540,800 loops/s.
+Calibrating timer...  209,510,400 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 221 sector (110 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -19,6 +19,25 @@ Executing 'syn-read':
 (syn-read) write "data"
 (syn-read) close "data"
 (syn-read) exec child 1 of 10: "child-syn-read 0"
-child-syn-read: exit(-1)
+(syn-read) exec child 2 of 10: "child-syn-read 1"
+(syn-read) exec child 3 of 10: "child-syn-read 2"
+(syn-read) exec child 4 of 10: "child-syn-read 3"
+(syn-read) exec child 5 of 10: "child-syn-read 4"
+(syn-read) exec child 6 of 10: "child-syn-read 5"
+(syn-read) exec child 7 of 10: "child-syn-read 6"
+(syn-read) exec child 8 of 10: "child-syn-read 7"
+(syn-read) exec child 9 of 10: "child-syn-read 8"
+(syn-read) exec child 10 of 10: "child-syn-read 9"
+child-syn-read: exit(7)
+child-syn-read: exit(4)
+Kernel PANIC at ../../threads/palloc.c:314 in palloc_free_multiple(): executed an unreachable statement
+Call stack: 0x800421898b 0x800420c052 0x800420c148 0x800420d43f 0x800420d4c2 0x800420d545 0x800420d60e 0x800421c75c 0x800421c6f8 0x800420717f 0x800421df05 0x800421dc0f 0x800421dac4child-syn-read: exit(-1)
 child-syn-read: exit(0)
-TIMEOUT
+Kernel PANIC recursion at ../../threads/palloc.c:314 in palloc_free_multiple().
+Timer: 1472 ticks
+Thread: 30 idle ticks, 704 kernel ticks, 738 user ticks
+hd0:0: 0 reads, 0 writes
+hd0:1: 6800 reads, 496 writes
+hd1:0: 221 reads, 0 writes
+Console: 1900 characters output
+Key

@@ -45,7 +45,7 @@ process_create_initd (const char *file_name) {
 	char *fn_copy;
 	tid_t tid;
 	char *token_ptr;
-
+	char* name;
 	struct thread *curr = thread_current();
 
 	/* Make a copy of FILE_NAME.
@@ -55,11 +55,11 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
-	file_name = strtok_r((char *) file_name, " ", &token_ptr);
+	name = strtok_r((char *) file_name, " ", &token_ptr);
 
 	/* Create a new thread to execute FILE_NAME. */
 	//printf("[process_create_initd] creating thread to execute initd \n");
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (name, PRI_DEFAULT, initd, fn_copy);
 
 	
 	curr->child_list[curr->childSize] = tid;
@@ -140,8 +140,9 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	//shallow copy --> internal pointers point to the same place
 	newpage = palloc_get_page (PAL_USER);
 	//no pages available
-	if(newpage == NULL)
-		return true;
+	if(newpage == NULL){
+		palloc_free_page(newpage);
+		return true;}
 	
 	
 	/* 4. TODO: Duplicate parent's page to the new page and
@@ -254,13 +255,15 @@ process_exec (void *f_name) {
 
 	char* file_name=palloc_get_page(0);
 	if(file_name==NULL){
-		palloc_free_page(file_name);
+//		palloc_free_page(file_name);
 		return -1;}
 	
 	char *token_ptr = NULL;
 	bool success;
 
 	strlcpy(file_name, (char*)f_name, PGSIZE);
+
+//	palloc_free_page(f_name);
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
@@ -280,12 +283,13 @@ process_exec (void *f_name) {
 	
 
 	/* If load failed, quit. */
-	//palloc_free_page (file_name);
+	palloc_free_page (file_name);
 	if (!success)
 	{
 		return -1;
 	}
 
+	palloc_free_page(f_name);
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
@@ -307,8 +311,8 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 	struct thread *t = NULL, *cur = thread_current();
-	//printf("[process_wait] current tid: %d \n", cur->tid);
-	//printf("[process_wait] child_tid tid: %d \n", child_tid);
+//	printf("[process_wait] current tid: %d, name: %s \n", cur->tid, cur->name);
+//	printf("[process_wait] child_tid tid: %d \n", child_tid);
 
     int i = 0;
     bool is_child = false;
@@ -703,7 +707,9 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
         printf("load: error in setup_arguments \n");
     }
 
-	palloc_free_page(file_name);
+
+	*(int64_t *)(if_->rsp)=NULL;
+//	palloc_free_page(file_name);
 //	if(success==true) printf("[load] success is true\n");
 	return success;
 	//printf("[load] argc from if_: %d \n", if_->R.rdi);

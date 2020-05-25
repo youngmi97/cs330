@@ -4,7 +4,7 @@ Kernel command line: -q -f put multi-recurse run 'multi-recurse 15'
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
-Calibrating timer...  104,755,200 loops/s.
+Calibrating timer...  209,510,400 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 110 sector (55 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -15,36 +15,27 @@ Executing 'multi-recurse 15':
 (multi-recurse) begin 15
 (multi-recurse) begin 14
 (multi-recurse) exec("multi-recurse 14")
-(multi-recurse) begin 13
+Interrupt 0x0d (#GP General Protection Exception) at rip=8004218f3f
+ cr2=0000000000000000 error=               0
+rax cccccccccccccccc rbx 00000080042b8e80 rcx 0000000000000400 rdx 00000080042b7818
+rsp 00000080042c8be0 rbp 00000080042c8bf0 rsi 00000080042b7818 rdi 00000080042b7818
+rip 0000008004218f3f r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
+r11 0000000000000212 r12 000000800421dbaf r13 000000800420888c r14 00000080042b8e20
+r15 0000000000000006 rflags 00000206
+es: 001b ds: 001b cs: 0008 ss: 0010
+Kernel PANIC at ../../userprog/exception.c:99 in kill(): Kernel bug - unexpected interrupt in kernel
+Call stack: 0x800421898b 0x800421d8ad 0x80042096e6 0x8004209b04 0x800421913d 0x800420c83d 0x800422038a 0x800421f951 0x800421ed34 0x800421ccec 0x800421c506 0x800421de8b 0x800421dc74 0x800421dac4multi-recurse: exit(-1)
 (multi-recurse) exec("multi-recurse 13")
-(multi-recurse) exec("multi-recurse 12")
-(multi-recurse) begin 12
-(multi-recurse) begin 11
-(multi-recurse) exec("multi-recurse 11")
-(multi-recurse) exec("multi-recurse 10")
-(multi-recurse) begin 10
-(multi-recurse) begin 9
-(multi-recurse) exec("multi-recurse 9")
-(multi-recurse) exec("multi-recurse 8")
-(multi-recurse) begin 8
-(multi-recurse) exec("multi-recurse 7")
-(multi-recurse) begin 7
-(multi-recurse) exec("multi-recurse 6")
-(multi-recurse) begin 6
-(multi-recurse) begin 5
-(multi-recurse) exec("multi-recurse 5")
-(multi-recurse) begin 4
-(multi-recurse) exec("multi-recurse 4")
-(multi-recurse) begin 3
-(multi-recurse) exec("multi-recurse 3")
-(multi-recurse) begin 2
-(multi-recurse) exec("multi-recurse 2")
-(multi-recurse) begin 1
-(multi-recurse) exec("multi-recurse 1")
-(multi-recurse) exec("multi-recurse 0")
-(multi-recurse) begin 0
-(multi-recurse) end 0
-multi-recurse: exit(0)
-(multi-recurse) end 1
+(multi-recurse) wait(exec("multi-recurse 13")) returned -1: FAILED
 multi-recurse: exit(1)
-TIMEOUT
+(multi-recurse) wait(exec("multi-recurse 14")) returned 1: FAILED
+multi-recurse: exit(1)
+Execution of 'multi-recurse' complete.
+Kernel PANIC recursion at ../../threads/thread.c:665 in thread_donate_blockers().
+Timer: 98 ticks
+Thread: 30 idle ticks, 57 kernel ticks, 11 user ticks
+hd0:0: 0 reads, 0 writes
+hd0:1: 137 reads, 248 writes
+hd1:0: 110 reads, 0 writes
+Console: 2050 characters output
+Key

@@ -1,2 +1,17 @@
 FAIL
-run: TIMEOUT
+Kernel panic in run: PANIC at ../../threads/palloc.c:314 in palloc_free_multiple(): executed an unreachable statement
+Call stack: 0x800421898b 0x800420c052 0x800420c148 0x800420d43f 0x800420d4c2 0x800420d545 0x800420d60e 0x800421c75c 0x800421c6f8 0x800420717f 0x800421df05 0x800421dc0f 0x800421dac4c
+Translation of call stack:
+0x000000800421898b: debug_panic (lib/kernel/debug.c:32)
+0x000000800420c052: palloc_free_multiple (threads/palloc.c:316)
+0x000000800420c148: palloc_free_page (threads/palloc.c:329)
+0x000000800420d43f: pt_destroy (threads/mmu.c:159 (discriminator 2))
+0x000000800420d4c2: pgdir_destroy (threads/mmu.c:169 (discriminator 2))
+0x000000800420d545: pdpe_destroy (threads/mmu.c:179 (discriminator 2))
+0x000000800420d60e: pml4_destroy (threads/mmu.c:198)
+0x000000800421c75c: process_cleanup (userprog/process.c:398)
+0x000000800421c6f8: process_exit (userprog/process.c:366)
+0x000000800420717f: thread_exit (threads/thread.c:339)
+0x000000800421df05: remove (userprog/syscall.c:232)
+0x000000800421dc0f: syscall_handler (userprog/syscall.c:121)
+0x00000800421dac4c: (unknown)

@@ -4,7 +4,7 @@ Kernel command line: -q -f put rox-multichild put child-rox run rox-multichild
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
-Calibrating timer...  104,755,200 loops/s.
+Calibrating timer...  209,510,400 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 214 sector (107 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -18,21 +18,35 @@ Executing 'rox-multichild':
 (rox-multichild) read "child-rox"
 (rox-multichild) write "child-rox"
 (child-rox) begin
+(child-rox) try to write "child-rox"
 (rox-multichild) exec "child-rox 5"
-(child-rox) try to write "child-rox"
 (child-rox) begin
+(child-rox) try to write "child-rox"
 (child-rox) exec "child-rox 4"
-(child-rox) try to write "child-rox"
 (child-rox) begin
+(child-rox) try to write "child-rox"
 (child-rox) exec "child-rox 3"
-(child-rox) try to write "child-rox"
 (child-rox) begin
+(child-rox) try to write "child-rox"
 (child-rox) exec "child-rox 2"
-(child-rox) try to write "child-rox"
 (child-rox) begin
-(child-rox) exec "child-rox 1"
 (child-rox) try to write "child-rox"
 (child-rox) try to write "child-rox"
 (child-rox) end
 child-rox: exit(12)
-TIMEOUT
+(child-rox) exec "child-rox 1"
+(child-rox) try to write "child-rox"
+(child-rox) end
+child-rox: exit(12)
+Kernel PANIC at ../../threads/palloc.c:314 in palloc_free_multiple(): executed an unreachable statement
+Call stack: 0x800421898b 0x800420c052 0x800420c148 0x800420d43f 0x800420d4c2 0x800420d545 0x800420d60e 0x800421c75c 0x800421c6f8 0x800420717f 0x800421df05 0x800421dc0f 0x800421dac4child-rox: exit(-1)
+(child-rox) wait for "child-rox": FAILED
+child-rox: exit(1)
+Kernel PANIC recursion at ../../threads/palloc.c:314 in palloc_free_multiple().
+Timer: 165 ticks
+Thread: 30 idle ticks, 71 kernel ticks, 64 user ticks
+hd0:0: 0 reads, 0 writes
+hd0:1: 399 reads, 467 writes
+hd1:0: 214 reads, 0 writes
+Console: 1986 characters output
+Key

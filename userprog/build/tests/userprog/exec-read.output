@@ -4,7 +4,7 @@ Kernel command line: -q -f put exec-read put sample.txt put child-read run exec-
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
-Calibrating timer...  104,755,200 loops/s.
+Calibrating timer...  209,510,400 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 223 sector (111 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -27,15 +27,13 @@ child-read: exit(0)
 (exec-read) Parent success
 (exec-read) end
 exec-read: exit(0)
-Kernel PANIC at ../../threads/palloc.c:314 in palloc_free_multiple(): executed an unreachable statement
-Call stack: 0x800421898b 0x800420c052 0x800420c148 0x800420d43f 0x800420d4c2 0x800420d545 0x800420d60e 0x800421c733 0x800421c6cf 0x800420717f 0x800421dedd 0x800421dbe7 0x800421da9cexec-read: exit(-1)
 Execution of 'exec-read' complete.
-Timer: 109 ticks
-Thread: 30 idle ticks, 67 kernel ticks, 12 user ticks
+Timer: 87 ticks
+Thread: 30 idle ticks, 54 kernel ticks, 3 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 212 reads, 494 writes
 hd1:0: 223 reads, 0 writes
-Console: 1573 characters output
+Console: 1267 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

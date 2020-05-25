@@ -196,13 +196,14 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
 static pid_t exec(const char *cmd_line)
 {
+
     int retVal = -1;
     
     if (cmd_line != NULL)
     {
         char *exec_page = palloc_get_page(0);
 		strlcpy (exec_page, cmd_line, PGSIZE);
-        retVal = process_exec(exec_page);
+        retVal = process_exec(exec_page/*cmd_line*/);
     }
 
     return retVal;
