@@ -1,10 +1,17 @@
-Kernel command line: -q -f put rox-child put child-rox run rox-child
+c[?7l[2J[0mSeaBIOS (version rel-1.11.0-0-g63451fca13-prebuilt.qemu-project.org)
+
+
+iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+0FF915A0+0FEF15A0 C980
+Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+
+
+Booting from Hard Disk..Kernel command line: -q -f put rox-child put child-rox run rox-child
 0 ~ 9fc00 1
 100000 ~ ffe0000 1
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
-Calibrating timer...  209,510,400 loops/s.
+Calibrating timer...  104,345,600 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 214 sector (107 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -17,22 +24,22 @@ Executing 'rox-child':
 (rox-child) open "child-rox"
 (rox-child) read "child-rox"
 (rox-child) write "child-rox"
+(rox-child) exec "child-rox 1"
 (child-rox) begin
 (child-rox) try to write "child-rox"
 (child-rox) try to write "child-rox"
 (child-rox) end
 child-rox: exit(12)
-(rox-child) exec "child-rox 1"
 (rox-child) write "child-rox"
 (rox-child) write "child-rox": FAILED
 rox-child: exit(1)
 Execution of 'rox-child' complete.
-Timer: 88 ticks
-Thread: 30 idle ticks, 55 kernel ticks, 3 user ticks
+Timer: 327 ticks
+Thread: 36 idle ticks, 286 kernel ticks, 5 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 172 reads, 467 writes
 hd1:0: 214 reads, 0 writes
-Console: 1200 characters output
+Console: 1202 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

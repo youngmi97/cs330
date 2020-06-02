@@ -230,7 +230,6 @@ __do_fork (void *aux) {
 
 	if_.R.rax=0;
 
-	
 	sema_up(&parent->sema_initialization);
 
 	process_init ();
@@ -253,17 +252,19 @@ int
 process_exec (void *f_name) {
 	//char *file_name = f_name;
 
+	//printf("[process_exec] f_name: %s \n", f_name);
+
 	char* file_name=palloc_get_page(0);
-	if(file_name==NULL){
-//		palloc_free_page(file_name);
-		return -1;}
+	if(file_name==NULL)
+	{
+		return -1;
+	}
 	
 	char *token_ptr = NULL;
 	bool success;
 
 	strlcpy(file_name, (char*)f_name, PGSIZE);
 
-//	palloc_free_page(f_name);
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
@@ -279,8 +280,6 @@ process_exec (void *f_name) {
 	file_name = strtok_r(file_name, " ", &token_ptr);
 	/* And then load the binary */
 	success = load (file_name, &_if, &token_ptr);
-
-	
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -311,8 +310,8 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 	struct thread *t = NULL, *cur = thread_current();
-//	printf("[process_wait] current tid: %d, name: %s \n", cur->tid, cur->name);
-//	printf("[process_wait] child_tid tid: %d \n", child_tid);
+	//printf("[process_wait] current tid: %d, name: %s \n", cur->tid, cur->name);
+	//printf("[process_wait] child_tid tid: %d \n", child_tid);
 
     int i = 0;
     bool is_child = false;
@@ -604,16 +603,23 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 	process_activate (thread_current ());
 
 
+	//printf("[load] process_activate \n");
+
 	//printf("[load] calling filesys_open \n");
 	/* Open executable file. */
 	//printf("[load] file name: %s \n", file_name);
+	
+
 	file = filesys_open (file_name);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
 	}
+
+	//printf("[load] file open \n");
 	
 	//[Project 2] store the executable on the parent thread
+	//printf("[load] current thread: %d \n", t->tid);
 	t->executable = file;
 
 	/* Read and verify executable header. */
@@ -627,6 +633,9 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 		printf ("load: %s: error loading executable\n", file_name);
 		goto done;
 	}
+
+
+	//printf("[load] end of file_read \n");
 
 	/* Read program headers. */
 	file_ofs = ehdr.e_phoff;
@@ -688,8 +697,6 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 		printf("[load] setup stack failed \n");
 		goto done;
 	}
-	/* Start address. */
-	if_->rip = ehdr.e_entry;
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
@@ -701,16 +708,21 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 	success = setup_arg(&if_->rsp, if_, token_ptr, file_name);
 	intr_set_level(old_level);
 
-
     if (!success)
     {
         printf("load: error in setup_arguments \n");
     }
 
+	/* Start address. */
+	if_->rip = ehdr.e_entry;
 
-	*(int64_t *)(if_->rsp)=NULL;
-//	palloc_free_page(file_name);
-//	if(success==true) printf("[load] success is true\n");
+
+	//*(int64_t *)(if_->rsp)=NULL;
+	//palloc_free_page(file_name);
+	//if(success==true) printf("[load] success is true\n");
+
+
+	//printf("[load] end of load \n");
 	return success;
 	//printf("[load] argc from if_: %d \n", if_->R.rdi);
 	//printf("[load] argv[0] addr from if_: %p \n", if_->R.rsi);
@@ -965,36 +977,6 @@ setup_stack (struct intr_frame *if_) {
 	 * TODO: If success, set the rsp accordingly.
 	 * TODO: You should mark the page is stack. */
 	/* TODO: Your code goes here */
-	
-
-	//[project 2] Get page and push arguments onto the stack
-	uint8_t *page;
-	//get from user pool, and initialize to zero
-	page = palloc_get_page(PAL_USER | PAL_ZERO);
-
-	printf("in setup_stack \n");
-
-	if (page != NULL)
-	{
-		printf("page allocated is not NULL\n");
-		//page successfully attained from the user pool
-		//install attained page to stack_bottom
-		//set writable to true
-		if (install_page(stack_bottom, page, true))
-		{
-			//successfully installed page
-			//place arguments on the created stack space
-			//set the rsp to the bottom of the stack
-			printf("install page success \n");
-			
-			success = true;
-			//if_->rsp = stack_bottom;
-			
-
-		}
-		else
-			palloc_free_page(page);
-	}
 
 	return success;
 }

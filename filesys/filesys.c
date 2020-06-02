@@ -71,6 +71,7 @@ filesys_open (const char *name) {
 	{
 		//printf("[filesys_open] dir not NULL \n");
 		dir_lookup (dir, name, &inode);
+		//printf("filesys_open] dir lookup done \n");
 	}
 	dir_close (dir);
 

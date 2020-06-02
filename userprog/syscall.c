@@ -111,7 +111,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
         case SYS_EXIT:
             //printf ("[syscall_handler] called SYS_EXIT\n");
-//            printf ("[syscall_handler] called from: %d\n", thread_current()->tid);
+            //printf ("[syscall_handler] called from: %d\n", thread_current()->tid);
             exit((int) f->R.rdi);
             break; /* Terminate this process. */
         
@@ -203,7 +203,7 @@ static pid_t exec(const char *cmd_line)
     {
         char *exec_page = palloc_get_page(0);
 		strlcpy (exec_page, cmd_line, PGSIZE);
-        retVal = process_exec(exec_page/*cmd_line*/);
+        retVal = process_exec(exec_page);
     }
 
     return retVal;
