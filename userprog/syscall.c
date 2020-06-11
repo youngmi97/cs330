@@ -272,7 +272,11 @@ static int open(const char *file)
         return -1;
     }
     
-    if(strcmp(thread_current()->name, file)==0) file_deny_write(file_ptr);
+    if(strcmp(thread_current()->name, file)==0) 
+    {
+        printf("[open] thread name equals file name\n");
+        file_deny_write(file_ptr);
+    }
     fd = add_file(&fd_list, file_ptr);
     lock_release(&locker);
 

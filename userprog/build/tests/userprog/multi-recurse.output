@@ -1,16 +1,17 @@
 c[?7l[2J[0mSeaBIOS (version rel-1.11.0-0-g63451fca13-prebuilt.qemu-project.org)
 
 
-iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+0FF915A0+0FEF15A0 C980
+iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+013915A0+012F15A0 C980
 Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
 
 
-Booting from Hard Disk..Kernel command line: -q -f put multi-recurse run 'multi-recurse 15'
+Booting from Hard Disk...
+Kernel command line: -q -f put multi-recurse run 'multi-recurse 15'
 0 ~ 9fc00 1
-100000 ~ ffe0000 1
+100000 ~ 13e0000 1
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
-	ext_mem: 0x100000 ~ 0xffe0000 (Usable: 260,992 kB)
+	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
 Calibrating timer...  104,755,200 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
@@ -22,27 +23,27 @@ Executing 'multi-recurse 15':
 (multi-recurse) begin 15
 (multi-recurse) exec("multi-recurse 14")
 (multi-recurse) begin 14
-Interrupt 0x0d (#GP General Protection Exception) at rip=8004218f3f
+(multi-recurse) exec("multi-recurse 13")
+Interrupt 0x0d (#GP General Protection Exception) at rip=8004218f75
  cr2=0000000000000000 error=               0
-rax cccccccccccccccc rbx 00000080042b8e80 rcx 0000000000000400 rdx 00000080042b7818
-rsp 00000080042c8be0 rbp 00000080042c8bf0 rsi 00000080042b7818 rdi 00000080042b7818
-rip 0000008004218f3f r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
-r11 0000000000000212 r12 000000800421db9a r13 000000800420888c r14 00000080042b8e20
+rax cccccccccccccccc rbx 0000008004240e80 rcx 0000000000000400 rdx 000000800423f818
+rsp 0000008004250be0 rbp 0000008004250bf0 rsi 000000800423f818 rdi 000000800423f818
+rip 0000008004218f75 r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
+r11 0000000000000212 r12 000000800421dbd0 r13 0000008004208887 r14 0000008004240e20
 r15 0000000000000006 rflags 00000206
 es: 001b ds: 001b cs: 0008 ss: 0010
 Kernel PANIC at ../../userprog/exception.c:99 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x800421898b 0x800421d898 0x80042096e6 0x8004209b04 0x800421913d 0x800420c83d 0x8004220375 0x800421f93c 0x800421ed1f 0x800421ccec 0x800421c506 0x800421de76 0x800421dc5f 0x800421daaf(multi-recurse) exec("multi-recurse 13")
-multi-recurse: exit(-1)
+Call stack: 0x80042189c1 0x800421d8ce 0x80042096e1 0x8004209aff 0x8004219173 0x800420c838 0x80042203ab 0x800421f972 0x800421ed55 0x800421cd22 0x800421c53c 0x800421deac 0x800421dc95 0x800421dae5multi-recurse: exit(-1)
 (multi-recurse) wait(exec("multi-recurse 13")) returned -1: FAILED
 multi-recurse: exit(1)
 (multi-recurse) wait(exec("multi-recurse 14")) returned 1: FAILED
 multi-recurse: exit(1)
 Execution of 'multi-recurse' complete.
 Kernel PANIC recursion at ../../threads/thread.c:665 in thread_donate_blockers().
-Timer: 321 ticks
-Thread: 38 idle ticks, 251 kernel ticks, 32 user ticks
+Timer: 312 ticks
+Thread: 36 idle ticks, 248 kernel ticks, 28 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 137 reads, 248 writes
 hd1:0: 110 reads, 0 writes
-Console: 2052 characters output
+Console: 2051 characters output
 Key

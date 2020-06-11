@@ -1,18 +1,18 @@
 FAIL
 Kernel panic in run: PANIC at ../../userprog/exception.c:99 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x800421898b 0x800421d898 0x80042096e6 0x8004209b04 0x800421913d 0x800420c83d 0x8004220375 0x800421f93c 0x800421ed1f 0x800421ccec 0x800421c506 0x800421de76 0x800421dc5f 0x800421daaf
+Call stack: 0x80042189c1 0x800421d8ce 0x80042096e1 0x8004209aff 0x8004219173 0x800420c838 0x80042203ab 0x800421f972 0x800421ed55 0x800421cd22 0x800421c53c 0x800421deac 0x800421dc95 0x800421dae5
 Translation of call stack:
-0x000000800421898b: debug_panic (lib/kernel/debug.c:32)
-0x000000800421d898: kill (userprog/exception.c:105)
-0x00000080042096e6: intr_handler (threads/interrupt.c:352)
-0x0000008004209b04: intr_entry (threads/intr-stubs.o:?)
-0x000000800421913d: list_push_front (lib/kernel/list.c:197)
-0x000000800420c83d: free (threads/malloc.c:222)
-0x0000008004220375: inode_close (filesys/inode.c:167)
-0x000000800421f93c: dir_close (filesys/directory.c:64)
-0x000000800421ed1f: filesys_open (filesys/filesys.c:78)
-0x000000800421ccec: load (userprog/process.c:613)
-0x000000800421c506: process_exec (userprog/process.c:282)
-0x000000800421de76: exec (userprog/syscall.c:206)
-0x000000800421dc5f: syscall_handler (userprog/syscall.c:127)
-0x000000800421daaf: no_sti (userprog/syscall-entry.o:?)
+0x00000080042189c1: debug_panic (lib/kernel/debug.c:32)
+0x000000800421d8ce: kill (userprog/exception.c:105)
+0x00000080042096e1: intr_handler (threads/interrupt.c:352)
+0x0000008004209aff: intr_entry (threads/intr-stubs.o:?)
+0x0000008004219173: list_push_front (lib/kernel/list.c:197)
+0x000000800420c838: free (threads/malloc.c:222)
+0x00000080042203ab: inode_close (filesys/inode.c:167)
+0x000000800421f972: dir_close (filesys/directory.c:64)
+0x000000800421ed55: filesys_open (filesys/filesys.c:78)
+0x000000800421cd22: load (userprog/process.c:613)
+0x000000800421c53c: process_exec (userprog/process.c:282)
+0x000000800421deac: exec (userprog/syscall.c:206)
+0x000000800421dc95: syscall_handler (userprog/syscall.c:127)
+0x000000800421dae5: no_sti (userprog/syscall-entry.o:?)
