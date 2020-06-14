@@ -274,7 +274,7 @@ static int open(const char *file)
     
     if(strcmp(thread_current()->name, file)==0) 
     {
-        printf("[open] thread name equals file name\n");
+        //printf("[open] thread name equals file name\n");
         file_deny_write(file_ptr);
     }
     fd = add_file(&fd_list, file_ptr);

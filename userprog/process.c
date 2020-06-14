@@ -225,7 +225,7 @@ __do_fork (void *aux) {
 
 	struct file *file_copy_ptr = file_duplicate(parent->executable);
 
-	printf("[__do_fork] parent's executable: %llx \n", file_copy_ptr);
+	//printf("[__do_fork] parent's executable: %llx \n", file_copy_ptr);
 
 	current->file_table = fd_list;
 	current->executable = file_copy_ptr;
@@ -262,7 +262,7 @@ process_exec (void *f_name) {
 	char* file_name=palloc_get_page(0);
 	if(file_name==NULL)
 	{
-		printf("[process_exec] file_name is NULL \n");
+		//printf("[process_exec] file_name is NULL \n");
 		return -1;
 	}
 	
@@ -291,7 +291,7 @@ process_exec (void *f_name) {
 	palloc_free_page (file_name);
 	if (!success)
 	{
-		printf("[process_exec] load failed \n");
+		//printf("[process_exec] load failed \n");
 		return -1;
 	}
 
@@ -317,8 +317,8 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 	struct thread *t = NULL, *cur = thread_current();
-	printf("[process_wait] current tid: %d, name: %s \n", cur->tid, cur->name);
-	printf("[process_wait] child_tid tid: %d \n", child_tid);
+	//printf("[process_wait] current tid: %d, name: %s \n", cur->tid, cur->name);
+	//printf("[process_wait] child_tid tid: %d \n", child_tid);
 
     int i = 0;
     bool is_child = false;
@@ -626,9 +626,9 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 	//printf("[load] file open \n");
 	
 	//[Project 2] store the executable on the parent thread
-	printf("[load] current thread: %d \n", t->tid);
+	//printf("[load] current thread: %d \n", t->tid);
 	t->executable = file;
-	printf("[load] current thread executable: %llx \n", t->executable);
+	//printf("[load] current thread executable: %llx \n", t->executable);
 	//maybe give file ownership to child thread ??
 
 	/* Read and verify executable header. */
@@ -703,7 +703,7 @@ load (const char *file_name, struct intr_frame *if_, char ** token_ptr) {
 	//stack setup faile routine has to be called
 	if (!setup_stack (if_))
 	{
-		printf("[load] setup stack failed \n");
+		//printf("[load] setup stack failed \n");
 		goto done;
 	}
 
