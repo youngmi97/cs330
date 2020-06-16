@@ -107,11 +107,24 @@ spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
 	return true;
 }
 
+
+/* Initialize Frame Table */
+static struct hash frame_table;
+static struct lock locker;
+
+void initialize_frame_table(void)
+{
+    hash_init(&frame_table, frame_hash, frame_hash_less,NULL);    
+    lock_init(&locker);
+}
+
+
+
 /* Get the struct frame, that will be evicted. */
 static struct frame *
 vm_get_victim (void) {
 	struct frame *victim = NULL;
-	 /* TODO: The policy for eviction is up to you. */
+	/* TODO: The policy for eviction is up to you. */
 
 	return victim;
 }
@@ -122,9 +135,41 @@ static struct frame *
 vm_evict_frame (void) {
 	struct frame *victim UNUSED = vm_get_victim ();
 	/* TODO: swap out the victim and return the evicted frame. */
+	struct hash_iterator i;
+	struct thread* thread = NULL;
+	struct page* page = NULL;
+
+	lock_acquire(&locker);
+
+	if (!hash_empty(&frame_table))
+	{
+		// Get the first element from the frame_table
+		hash_first(&i, &frame_table);
+		hash_next(&i);
+		struct frame* frame = hash_entry(hash_cur(&i), struct frame, elem);
+
+
+		// Check if the page is dirty
+		thread = frame->thread;
+		page = frame->page;
+		if (!pml4_is_dirty(thread->pml4, page))
+		{
+			/* Not sure if evicting on this criteria is correct ...*/
+			/* Maybe get frame to be evicted from vm_get_victim
+			 * and do actual eviction here */
+			
+			// Free up resources for the victim frame and return pointer to it?
+			hash_delete(&frame_table, &frame->elem);
+			return frame->frame_ptr;
+		}
+
+	}
+	lock_release(&locker);
 
 	return NULL;
 }
+
+
 
 /* palloc() and get frame. If there is no available page, evict the page
  * and return it. This always return valid address. That is, if the user pool
@@ -133,7 +178,31 @@ vm_evict_frame (void) {
 static struct frame *
 vm_get_frame (void) {
 	struct frame *frame = NULL;
+	
 	/* TODO: Fill this function. */
+	struct frame* new_frame;
+	lock_acquire(&locker);
+
+	while(new_frame == NULL)
+	{
+		frame = malloc(sizeof(struct frame)); 
+		new_frame = palloc_get_page(PAL_USER);
+
+		if (new_frame != NULL)
+		{
+			/* Initialize Frame Data*/
+			frame->thread = thread_current();
+			frame->frame_ptr = new_frame;
+			frame->order = hash_size(&frame_table);
+			hash_insert(&frame_table,&frame->elem);
+		}
+
+		else
+		{
+			vm_evict_frame();
+		}
+	}
+	lock_release(&locker);
 
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
@@ -175,6 +244,9 @@ bool
 vm_claim_page (void *va UNUSED) {
 	struct page *page = NULL;
 	/* TODO: Fill this function */
+	page = spt_find_page(&thread_current()->spt, va);
+	if (page == NULL)
+		return false;
 
 	return vm_do_claim_page (page);
 }
@@ -189,7 +261,7 @@ vm_do_claim_page (struct page *page) {
 	page->frame = frame;
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
-
+	pml4_set_page(thread_current()->pml4, page->va, frame->kva, page->writable);
 	return swap_in (page, frame->kva);
 }
 
@@ -217,6 +289,8 @@ supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
 
 
 
+
+
 /*[Project 3] Hash structure related helper functions */
 unsigned page_hash(struct hash_elem* e, void* aux UNUSED)
 {
@@ -230,4 +304,18 @@ bool page_hash_less(struct hash_elem* a, struct hash_elem* b, void* aux UNUSED)
     struct page* page_b = hash_entry(b, struct page, elem);
 
     return page_a->va < page_b->va;
+}
+
+unsigned frame_hash (struct hash_elem* e, void* aux UNUSED)
+{
+   struct frame* frame = hash_entry(e, struct frame, elem);
+   return hash_int((int)frame->order);
+}
+
+
+bool frame_hash_less (struct hash_elem* a, struct hash_elem* b, void* aux UNUSED)
+{
+    struct frame* frame_a = hash_entry(a, struct frame, elem);
+    struct frame* frame_b = hash_entry(b, struct frame, elem);
+    return frame_a->order < frame_b->order;
 }

@@ -45,6 +45,7 @@ struct page {
 	struct frame *frame;   /* Back reference for frame */
 
 	/* Your implementation */
+	bool writable;
 	struct hash_elem elem;
 
 	/* Per-type data are binded into the union.
@@ -63,6 +64,10 @@ struct page {
 struct frame {
 	void *kva;
 	struct page *page;
+	struct thread* thread;
+	struct hash_elem elem;
+	struct frame* frame_ptr;
+	int order;
 };
 
 /* The function table for page operations.
@@ -112,14 +117,10 @@ enum vm_type page_get_type (struct page *page);
 
 
 /* [Project 3] */
+unsigned frame_hash (struct hash_elem* e, void* aux);
+bool frame_hash_less (struct hash_elem*  a, struct hash_elem*  b, void* aux);
 
-/* Computes and returns the hash value for hash element E, given
-   auxiliary data AUX. */
 unsigned page_hash (struct hash_elem* e, void* aux);
-
-/* Compares the value of two hash elements A and B, given
-   auxiliary data AUX.  Returns true if A is less than B, or
-   false if A is greater than or equal to B. */
 bool page_hash_less (struct hash_elem*  a, struct hash_elem*  b, void* aux);
 
 
