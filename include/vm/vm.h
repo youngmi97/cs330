@@ -28,7 +28,6 @@ enum vm_type {
 #include "vm/uninit.h"
 #include "vm/anon.h"
 #include "vm/file.h"
-#include "filesys/file.h"
 
 struct page_operations;
 struct thread;
@@ -45,8 +44,8 @@ struct page {
 	struct frame *frame;   /* Back reference for frame */
 
 	/* Your implementation */
-	struct hash_elem elem;
-
+	bool writable;
+	struct hash_elem hash_elem;
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
 	union {
@@ -85,7 +84,7 @@ struct page_operations {
  * We don't want to force you to obey any specific design for this struct.
  * All designs up to you for this. */
 struct supplemental_page_table {
-	struct hash *page_table;
+	struct hash hash_table;
 };
 
 #include "threads/thread.h"
@@ -109,19 +108,5 @@ bool vm_alloc_page_with_initializer (enum vm_type type, void *upage,
 void vm_dealloc_page (struct page *page);
 bool vm_claim_page (void *va);
 enum vm_type page_get_type (struct page *page);
-
-
-/* [Project 3] */
-
-/* Computes and returns the hash value for hash element E, given
-   auxiliary data AUX. */
-unsigned page_hash (struct hash_elem* e, void* aux);
-
-/* Compares the value of two hash elements A and B, given
-   auxiliary data AUX.  Returns true if A is less than B, or
-   false if A is greater than or equal to B. */
-bool page_hash_less (struct hash_elem*  a, struct hash_elem*  b, void* aux);
-
-
 
 #endif  /* VM_VM_H */
