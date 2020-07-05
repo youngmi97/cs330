@@ -24,10 +24,10 @@ Putting 'child-close' into the file system...
 Executing 'multi-child-fd':
 multi-child-fd: exit(-1)
 Execution of 'multi-child-fd' complete.
-Timer: 74 ticks
-Thread: 37 idle ticks, 37 kernel ticks, 0 user ticks
+Timer: 70 ticks
+Thread: 39 idle ticks, 30 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 90 reads, 478 writes
+hd0:1: 97 reads, 478 writes
 hd1:0: 215 reads, 0 writes
 hd1:1: 0 reads, 0 writes
 Console: 1067 characters output

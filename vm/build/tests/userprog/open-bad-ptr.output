@@ -5,14 +5,13 @@ iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+013915A0+012F15A0 C980
 Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
 
 
-Booting from Hard Disk...
-Kernel command line: -q -f put open-bad-ptr run open-bad-ptr
+Booting from Hard Disk..Kernel command line: -q -f put open-bad-ptr run open-bad-ptr
 0 ~ 9fc00 1
 100000 ~ 13e0000 1
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  157,081,600 loops/s.
+Calibrating timer...  130,867,200 loops/s.
 hd0:0: detected 329 sector (164 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 100 sector (50 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -23,10 +22,10 @@ Putting 'open-bad-ptr' into the file system...
 Executing 'open-bad-ptr':
 open-bad-ptr: exit(-1)
 Execution of 'open-bad-ptr' complete.
-Timer: 68 ticks
-Thread: 34 idle ticks, 34 kernel ticks, 0 user ticks
+Timer: 67 ticks
+Thread: 35 idle ticks, 31 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 34 reads, 228 writes
+hd0:1: 41 reads, 228 writes
 hd1:0: 100 reads, 0 writes
 hd1:1: 0 reads, 0 writes
 Console: 932 characters output

@@ -20,17 +20,15 @@ Formatting file system...done.
 Boot complete.
 Putting 'args-dbl-space' into the file system...
 Executing 'args-dbl-space two  spaces!':
-Kernel PANIC at ../../userprog/process.c:91 in initd(): Fail to launch initd
-
-Call stack: 0x80042189cd 0x800421c0ca 0x8004207592.
-The `backtrace' program can make call stacks useful.
-Read "Backtraces" in the "Debugging Tools" chapter
-of the Pintos documentation for more information.
-Timer: 66 ticks
-Thread: 32 idle ticks, 34 kernel ticks, 0 user ticks
+args-dbl-space: exit(-1)
+Execution of 'args-dbl-space' complete.
+Timer: 69 ticks
+Thread: 33 idle ticks, 35 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 41 reads, 226 writes
 hd1:0: 99 reads, 0 writes
 hd1:1: 0 reads, 0 writes
-Console: 1189 characters output
-Key
+Console: 970 characters output
+Keyboard: 0 keys pressed
+Exception: 0 page faults
+Powering off...

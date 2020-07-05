@@ -5,7 +5,8 @@ iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+013915A0+012F15A0 C980
 Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
 
 
-Booting from Hard Disk..Kernel command line: -q -f put pt-bad-addr run pt-bad-addr
+Booting from Hard Disk...
+Kernel command line: -q -f put pt-bad-addr run pt-bad-addr
 0 ~ 9fc00 1
 100000 ~ 13e0000 1
 Pintos booting with: 
@@ -22,10 +23,10 @@ Putting 'pt-bad-addr' into the file system...
 Executing 'pt-bad-addr':
 pt-bad-addr: exit(-1)
 Execution of 'pt-bad-addr' complete.
-Timer: 66 ticks
-Thread: 33 idle ticks, 33 kernel ticks, 0 user ticks
+Timer: 67 ticks
+Thread: 34 idle ticks, 32 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 34 reads, 228 writes
+hd0:1: 41 reads, 228 writes
 hd1:0: 100 reads, 0 writes
 hd1:1: 0 reads, 0 writes
 Console: 926 characters output

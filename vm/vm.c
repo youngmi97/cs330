@@ -4,6 +4,7 @@
 #include "vm/vm.h"
 #include "vm/inspect.h"
 #include "threads/vaddr.h"
+#include "threads/thread.h"
 #include <hash.h>
 #include "vm/uninit.h"
 #include "vm/file.h"
@@ -111,8 +112,10 @@ spt_insert_page (struct supplemental_page_table *spt UNUSED,
 
 void
 spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
+	if(hash_delete(&spt->hash_table, &page->hash_elem)){
 	vm_dealloc_page (page);
-	return true;
+	return true;}
+	return false;
 }
 
 /* Get the struct frame, that will be evicted. */
@@ -146,6 +149,7 @@ vm_get_frame (void) {
 	ASSERT (frame != NULL);
 
 	frame->kva=palloc_get_page(PAL_USER);
+	if(frame->kva==NULL){PANIC("todo");}
 	frame->page=NULL;
 	ASSERT (frame->page == NULL);
 	return frame;
@@ -154,6 +158,11 @@ vm_get_frame (void) {
 /* Growing the stack. */
 static void
 vm_stack_growth (void *addr UNUSED) {
+	void *bottom=pg_round_down(addr);
+	if(vm_alloc_page(VM_MARKER_0|VM_ANON, bottom, true)){
+		vm_claim_page(bottom);
+		bottom+=PGSIZE;
+	}
 }
 
 /* Handle the fault on write_protected page */
@@ -172,14 +181,13 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	/* TODO: Your code goes here */
 	page=spt_find_page(spt, addr);
 	if(write&&!not_present) exit(-1);
+	rsp=thread_current()->rsp;
 	if(user){
 		if(!is_user_vaddr(addr)) return false;
 		else{
-			rsp=f->rsp;
+			thread_current()->rsp=f->rsp;
 		}
 	}
-	else{
-		rsp=thread_current()->rsp;}
 
 	if(page==NULL){
 		vm_stack_growth(addr);
@@ -248,7 +256,7 @@ bool
 supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
 		struct supplemental_page_table *src UNUSED) {
 			/*firstly I have copied with memcpy but is this right?*/
-			struct hash_iterator i;
+/*			struct hash_iterator i;
 			struct page *original, *copied;
 			hash_first(&i, &src->hash_table);
 			while(hash_next(&i)){
@@ -259,7 +267,36 @@ supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
 					memcpy(copied->frame->kva, original->frame->kva, PGSIZE);
 				}
 			}
-
+*/
+	ASSERT(dst == &thread_current()->spt);
+	struct hash_iterator i;
+	bool succ;
+	struct lazy_aux *lazy_aux;
+	hash_first (&i, &src->hash_table);
+	while (hash_next (&i)) {
+		struct page *src_page = hash_entry(hash_cur(&i), struct page, hash_elem);
+		switch (src_page->operations->type)
+		{
+			case VM_UNINIT:
+				//struct lazy_aux *lazy_aux;
+				lazy_aux = malloc(sizeof(struct lazy_aux));
+				memcpy(lazy_aux, src_page->uninit.aux, sizeof(struct lazy_aux));
+				succ = vm_alloc_page_with_initializer(page_get_type(src_page), src_page->va, src_page->writable, src_page->uninit.init,lazy_aux);			
+				break;
+			default:
+				succ = vm_alloc_page(src_page->operations->type, src_page->va, src_page->writable);
+				if (succ){
+					struct page *dst_page = spt_find_page(&thread_current()->spt, src_page->va);
+					if(!vm_claim_page(src_page->va))
+					{
+						PANIC("todo");
+					}
+					memcpy(dst_page->frame->kva, src_page->frame->kva, PGSIZE);
+				}
+				break;
+		}
+	}
+	return succ;
 }
 
 /* Free the resource hold by the supplemental page table */

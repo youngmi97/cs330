@@ -11,7 +11,7 @@ Booting from Hard Disk..Kernel command line: -q -f put exec-read put sample.txt 
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  209,510,400 loops/s.
+Calibrating timer...  104,755,200 loops/s.
 hd0:0: detected 329 sector (164 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 223 sector (111 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -24,10 +24,10 @@ Putting 'child-read' into the file system...
 Executing 'exec-read':
 exec-read: exit(-1)
 Execution of 'exec-read' complete.
-Timer: 74 ticks
-Thread: 35 idle ticks, 39 kernel ticks, 0 user ticks
+Timer: 75 ticks
+Thread: 39 idle ticks, 35 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 90 reads, 494 writes
+hd0:1: 97 reads, 494 writes
 hd1:0: 223 reads, 0 writes
 hd1:1: 0 reads, 0 writes
 Console: 1035 characters output

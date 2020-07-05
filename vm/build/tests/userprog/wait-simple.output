@@ -23,10 +23,10 @@ Putting 'child-simple' into the file system...
 Executing 'wait-simple':
 wait-simple: exit(-1)
 Execution of 'wait-simple' complete.
-Timer: 74 ticks
-Thread: 35 idle ticks, 39 kernel ticks, 0 user ticks
+Timer: 77 ticks
+Thread: 39 idle ticks, 38 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 61 reads, 434 writes
+hd0:1: 68 reads, 434 writes
 hd1:0: 198 reads, 0 writes
 hd1:1: 0 reads, 0 writes
 Console: 990 characters output

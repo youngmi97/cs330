@@ -183,6 +183,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
             //printf ("[syscall_handler] called SYS_CLOSE\n");
             close((int) f->R.rdi);
             break; /* Close a file. */
+    
     }
 
 	//thread_exit ();

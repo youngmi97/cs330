@@ -22,10 +22,10 @@ Putting 'wait-bad-pid' into the file system...
 Executing 'wait-bad-pid':
 wait-bad-pid: exit(-1)
 Execution of 'wait-bad-pid' complete.
-Timer: 65 ticks
-Thread: 31 idle ticks, 34 kernel ticks, 0 user ticks
+Timer: 64 ticks
+Thread: 35 idle ticks, 28 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 34 reads, 226 writes
+hd0:1: 41 reads, 226 writes
 hd1:0: 99 reads, 0 writes
 hd1:1: 0 reads, 0 writes
 Console: 930 characters output

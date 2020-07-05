@@ -3,12 +3,6 @@ Test output failed to match any acceptable form.
 
 Acceptable output:
   (close-bad-fd) begin
-  close-bad-fd: exit(-1)
-Differences in `diff -u' format:
-- (close-bad-fd) begin
-  close-bad-fd: exit(-1)
-Acceptable output:
-  (close-bad-fd) begin
   (close-bad-fd) end
   close-bad-fd: exit(0)
 Differences in `diff -u' format:
@@ -16,3 +10,9 @@ Differences in `diff -u' format:
 - (close-bad-fd) end
 - close-bad-fd: exit(0)
 + close-bad-fd: exit(-1)
+Acceptable output:
+  (close-bad-fd) begin
+  close-bad-fd: exit(-1)
+Differences in `diff -u' format:
+- (close-bad-fd) begin
+  close-bad-fd: exit(-1)
