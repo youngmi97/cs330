@@ -1,0 +1,19 @@
+Kernel command line: -q -f put read-bad-fd run read-bad-fd
+0 ~ 9fc00 1
+100000 ~ 13e0000 1
+Pintos booting with: 
+	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
+	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
+Calibrating timer...  209,510,400 loops/s.
+hd0:0: detected 329 sector (164 kB) disk, model "QEMU HARDDISK", serial "QM00001"
+hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
+hd1:0: detected 103 sector (51 kB) disk, model "QEMU HARDDISK", serial "QM00003"
+Formatting file system...done.
+Boot complete.
+Putting 'read-bad-fd' into the file system...
+Kernel PANIC at ../../lib/kernel/bitmap.c:272 in bitmap_scan(): assertion `b != NULL' failed.
+Call stack: 0x80042146bf 0x8004216887 0x8004216984 0x800421b608 0x800421a975 0x800421d3eb 0x80042068c0 0x800420617a.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Kernel PANIC recursion at ../../devices/timer.c:187 in real_time_sleep().
